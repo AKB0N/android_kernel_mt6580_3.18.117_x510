@@ -1668,7 +1668,6 @@
 
 };
 
-#include <cust.dtsi>
 #include <trusty.dtsi>
 
 &eintc {
