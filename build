@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+
+#
+# Copyright (C) 2018 Yuvraj Saxena (rad0n)
+#
+
+# Script to compile kernel
+
+# Colors
+
+ORNG=$'\033[0;33m'
+CYN=$'\033[0;36m'
+PURP=$'\033[0;35m'
+BLINK_RED=$'\033[05;31m'
+BLUE=$'\033[01;34m'
+BLD=$'\033[1m'
+GRN=$'\033[01;32m'
+RED=$'\033[01;31m'
+RST=$'\033[0m'
+YLW=$'\033[01;33m'
+
+# Get Credentials
+
+source ~/.yuvraj.conf
+
+# Common Declarations
+
+declare -a BUILDER_NAME="IBRAHIM FATHELBAB"
+declare -a BUILDER_NICKNAME="ibrahim1973"
+declare -a COMPILED_KERNEL="out/arch/arm/boot/zImage-dtb"
+declare -a BUILDER_TG_NAME="akbon19"
+declare -a TESTER_TG_NAME="Pharaohs-Team"
+declare -a DEVICE_NAME="Infinix-x510"
+declare -f TGFILE
+declare -f TGECHO
+REPO_NAME="$(basename `git rev-parse --show-toplevel`)"
+
+# Start Script
+
+function START_SCRIPT() {
+if [[ ${BUILDING_ON_CI} = 'y' ]]; then
+        args="${*}"
+        while [[ ${#} -ge 1 ]]; do
+	case "${1}" in
+                "-b"|"--build")
+                        BUILD_KERNEL=y
+clear
+                        ;;
+		"-c"|"--clean")
+			CLEAN_KERNEL=y
+clear
+			;;
+                "-h"|"--help")
+                        HELP=y
+clear
+                        ;;
+		*)
+clear
+                        printf '\n'
+			echo "${RED}Opps:Invalid Option${RST}"
+                        exit;
+			;;
+		esac
+		shift
+        done
+else
+        echo "${GRN} Welcome ${RST}"
+        read -rn1 -p "${PURP}Type h for help (b|c|h): ${RST}" O
+	case "${O}" in
+                "b"|"build")
+                        BUILD_KERNEL=y
+clear
+                        ;;
+		"c"|"clean")
+			CLEAN_KERNEL=y
+clear
+			;;
+                "h"|"help")
+                        HELP=y
+clear
+                        ;;
+		*)
+clear
+			printf '\n'
+			echo "${RED}Opps:Invalid Option${RST}"
+                        exit;
+			;;
+		esac
+		shift
+fi
+}
+
+function BANNER() {
+clear
+        INFO
+        echo "${BLINK_RED}
+
+▓██   ██▓ █    ██  ██▒   █▓ ██▀███   ▄▄▄      ▄▄▄██▀▀▀
+ ▒██  ██▒ ██  ▓██▒▓██░   █▒▓██ ▒ ██▒▒████▄      ▒██   
+  ▒██ ██░▓██  ▒██░ ▓██  █▒░▓██ ░▄█ ▒▒██  ▀█▄    ░██   
+  ░ ▐██▓░▓▓█  ░██░  ▒██ █░░▒██▀▀█▄  ░██▄▄▄▄██▓██▄██▓  
+  ░ ██▒▓░▒▒█████▓    ▒▀█░  ░██▓ ▒██▒ ▓█   ▓██▒▓███▒   
+   ██▒▒▒ ░▒▓▒ ▒ ▒    ░ ▐░  ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░▒▓▒▒░   
+ ▓██ ░▒░ ░░▒░ ░ ░    ░ ░░    ░▒ ░ ▒░  ▒   ▒▒ ░▒ ░▒░   
+ ▒ ▒ ░░   ░░░ ░ ░      ░░    ░░   ░   ░   ▒   ░ ░ ░   
+ ░ ░        ░           ░     ░           ░  ░░   ░   
+ ░ ░                   ░                              
+${RST}
+"
+sleep 2
+clear
+}
+
+function INFO() {
+        echo "${BLD}${CYN} MADE BY ${BUILDER_NAME} (AKA: ${BUILDER_NICKNAME}) ${RST}"
+}
+
+function TOOLCHAIN() {
+if [[ ! -d linaro ]];
+then
+        echo "${RED}####################################"
+        echo "${CYN}#       TOOLCHAIN NOT FOUND!       #"
+        echo "${YLW}####################################"
+	sleep 0.7
+clear
+        echo "${YLW}####################################"
+        echo "${GRN}#       CLONING TOOLCHAIN          #"
+        echo "####################################"
+        git clone -q https://github.com/rad0n/linaro-7.git linaro
+        export ARCH=arm CROSS_COMPILE=$PWD/linaro/bin/arm-linux-gnueabihf-
+else
+        export ARCH=arm CROSS_COMPILE=$PWD/linaro/bin/arm-linux-gnueabihf-
+fi
+}
+
+function BUILD() {
+clear
+	export KBUILD_BUILD_USER=Yuvraj
+        export KBUILD_BUILD_HOST=∆Thestral
+        export KERNEL_NAME=snowy
+        mkdir -p out
+        rm *log
+        echo "${PURP} READING DEFCONFIG..."
+        make x510_defconfig O=out/ &>> defconfig.log
+clear
+        echo "${YLW} BUILDING KERNEL..."
+        make -j6 O=out/ &>> Kernel.log
+	COMPILED_DATE=$(date +"%Y-%m-%d-%H:%M:%S")
+}
+
+function CHECK() {
+clear
+if [[ ! -e ${COMPILED_KERNEL} ]];
+then
+        echo "${RED}############################"
+        echo "${RED}#        BUILD ERROR!      #"
+        echo "${RED}############################"
+        echo "${CYN}#       Uploading Logs     #"
+        echo "${RED}############################"
+clear
+if [[ ${BUILDING_ON_CI} = 'y' ]]; then
+        TRANSFER Kernel.log
+else
+	TGFILE Kernel.log "Check Logs @${BUILDER_TG_NAME} build failed"
+fi
+else
+        echo "${GRN} #####################################"
+        echo "${GRN} #                                   #"
+        echo "${GRN} #  SUCCESSFULLY BUILDED KERNEL      #"
+        echo "${GRN} #        -BY IMYUVRAJ               #"
+        echo "${GRN} #                                   #"
+        echo "${GRN} #####################################"
+        echo "${ORNG} #  uploading Kernel                #"
+        echo "${ORNG} #####################################"
+        cp ${COMPILED_KERNEL} Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}
+	zip -r Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}.zip Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}
+clear
+if [[ ${BUILDING_ON_CI} = 'y' ]]; then
+        TRANSFER Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}.zip
+else
+	TGFILE Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}.zip "Build Completed @${BUILDER_TG_NAME}"
+        TGECHO "GitHub Repo: ${REPO_NAME}, Test @${TESTER_TG_NAME}"
+fi
+fi
+}
+
+function CLEAN() {
+clear
+        echo "${GRN}#        Cleaning Tree!      ${RST}"
+        make clean >/dev/null
+        make mrproper >/dev/null
+clear
+}
+
+function HELP() {
+	echo "${ORNG}options:${RST}"
+	echo "${CYN}  b      Build Kernel${RST}"
+	echo "${RST}  c      clean Kernel${RST}"
+	echo "${GRN}  h      Options${RST}"
+	read junk
+}
+
+function TRANSFER() {
+        file="$1"
+        zipname=$(echo "${file}" | awk -F '/' '{print $NF}')
+        destination="$2"
+        url=$(curl -# -T "${file}" https://transfer.sh/${destination})
+        printf '\n'
+        echo "${GRN}Download $zipname at $url${RST}"
+}
+
+function FORMAT_TIME() {
+        MINS=$(((${1}-${2})/60))
+        SECS=$(((${1}-${2})%60))
+if [[ ${MINS} -ge 60 ]]; then
+        HOURS=$((${MINS}/60))
+        MINS=$((${MINS}%60))
+fi
+
+if [[ ${HOURS} -eq 1 ]]; then
+        TIME_STRING+="1 HOUR, "
+elif [[ ${HOURS} -ge 2 ]]; then
+        TIME_STRING+="${HOURS} HOURS, "
+fi
+
+if [[ ${MINS} -eq 1 ]]; then
+        TIME_STRING+="1 MINUTE"
+else
+        TIME_STRING+="${MINS} MINUTES"
+fi
+
+if [[ ${SECS} -eq 1 && -n ${HOURS} ]]; then
+        TIME_STRING+=", AND 1 SECOND"
+elif [[ ${SECS} -eq 1 && -z ${HOURS} ]]; then
+        TIME_STRING+=" AND 1 SECOND"
+elif [[ ${SECS} -ne 1 && -n ${HOURS} ]]; then
+        TIME_STRING+=", AND ${SECS} SECONDS"
+elif [[ ${SECS} -ne 1 && -z ${HOURS} ]]; then
+        TIME_STRING+=" AND ${SECS} SECONDS"
+fi
+
+        echo ${TIME_STRING}
+}
+        
+        BANNER
+
+if [[ ${BUILDING_ON_CI} = 'y' ]]; then
+        START_SCRIPT "${@}"
+else
+	START_SCRIPT
+fi
+
+if [[ "${BUILD_KERNEL}" = 'y' ]]; then
+	TOOLCHAIN
+        START=$(date +"%s")
+        BUILD
+	CHECK
+        END=$(date +%s)
+        TIME_STRING="$(FORMAT_TIME "${START}" "${END}")"
+        echo "${GRN}Completed In: ${TIME_STRING}"
+elif [[ "${CLEAN_KERNEL}" = 'y' ]]; then
+        START=$(date +"%s")
+        CLEAN
+	END=$(date +%s)
+	TIME_STRING="$(FORMAT_TIME "${START}" "${END}")"
+	echo "${GRN}Completed In: ${TIME_STRING}"
+else
+if [[ "${HELP}" = 'y' ]]; then
+        HELP
+fi
+fi
