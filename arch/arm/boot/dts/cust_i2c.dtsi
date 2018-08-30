@@ -19,9 +19,9 @@
 		reg = <0x0C>;
 	};
 
-	CAMERA_SUB@21 {
+	CAMERA_SUB@10 {
 		compatible = "mediatek,CAMERA_SUB";
-		reg = <0x21>;
+		reg = <0x10>;
 	};
 
 };
@@ -50,9 +50,9 @@
 		reg = <0x0D>;
 	};
 
-	GSENSOR@4C {
+	GSENSOR@18 {
 		compatible = "mediatek,GSENSOR";
-		reg = <0x4C>;
+		reg = <0x18>;
 	};
 
 	GYRO@68 {
@@ -60,9 +60,9 @@
 		reg = <0x68>;
 	};
 
-	ALSPS@48 {
+	ALSPS@60 {
 		compatible = "mediatek,ALSPS";
-		reg = <0x48>;
+		reg = <0x60>;
 	};
 
 };
