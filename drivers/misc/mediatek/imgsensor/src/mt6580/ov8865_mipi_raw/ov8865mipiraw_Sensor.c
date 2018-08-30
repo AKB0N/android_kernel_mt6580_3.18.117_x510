@@ -39,15 +39,16 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-//#include <asm/system.h>
-#include <linux/xlog.h>
 
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
-#include "kd_imgsensor_define.h" 
+#include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
 #include "ov8865mipiraw_Sensor.h"
+#include "ov8865mipiraw_Camera_Sensor_para.h"
+#include "ov8865mipiraw_CameraCustomized.h"
+
 extern int iReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 
