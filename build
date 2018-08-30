@@ -25,12 +25,12 @@ source ~/.yuvraj.conf
 
 # Common Declarations
 
-declare -a BUILDER_NAME="YUVRAJ SAXENA"
-declare -a BUILDER_NICKNAME="rad0n"
+declare -a BUILDER_NAME="IBRAHIM FATHELBAB"
+declare -a BUILDER_NICKNAME="ibrahim1973"
 declare -a COMPILED_KERNEL="out/arch/arm/boot/zImage-dtb"
-declare -a BUILDER_TG_NAME="rad0n"
-declare -a TESTER_TG_NAME="vgdn1942"
-declare -a DEVICE_NAME="Dexp-P350"
+declare -a BUILDER_TG_NAME="akbon19"
+declare -a TESTER_TG_NAME="Pharaohs-Team"
+declare -a DEVICE_NAME="Infinix-x510"
 declare -f TGFILE
 declare -f TGECHO
 REPO_NAME="$(basename `git rev-parse --show-toplevel`)"
@@ -94,7 +94,6 @@ function BANNER() {
 clear
         INFO
         echo "${BLINK_RED}
-
 ▓██   ██▓ █    ██  ██▒   █▓ ██▀███   ▄▄▄      ▄▄▄██▀▀▀
  ▒██  ██▒ ██  ▓██▒▓██░   █▒▓██ ▒ ██▒▒████▄      ▒██   
   ▒██ ██░▓██  ▒██░ ▓██  █▒░▓██ ░▄█ ▒▒██  ▀█▄    ░██   
@@ -141,7 +140,7 @@ clear
         mkdir -p out
         rm *log
         echo "${PURP} READING DEFCONFIG..."
-        make P350_defconfig O=out/ &>> defconfig.log
+        make x510_defconfig O=out/ &>> defconfig.log
 clear
         echo "${YLW} BUILDING KERNEL..."
         make -j6 O=out/ &>> Kernel.log
