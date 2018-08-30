@@ -1044,9 +1044,6 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35521_HD720_DSI_VDO_RIXIN)
 	&nt35521_hd720_dsi_vdo_rixin_lcm_drv,
 #endif
-#if defined(NT35521_DSI_VDO_YUSHUN_CMI_HD720)
-	&nt35521_dsi_vdo_yushun_cmi_hd720_lcm_drv,
-#endif
 };
 
 unsigned char lcm_name_list[][128] = {
