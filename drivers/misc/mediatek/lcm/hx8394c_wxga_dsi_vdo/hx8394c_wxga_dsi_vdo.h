@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _HX8394D_DSI_VDO_HLT_HSD_HD720_
-#define _HX8394D_DSI_VDO_HLT_HSD_HD720_
+#ifndef _HX8394C_WXGA_DSI_VDO_
+#define _HX8394C_WXGA_DSI_VDO_
 
 #include "ddp_hal.h"
 
