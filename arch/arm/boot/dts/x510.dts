@@ -20,7 +20,7 @@
 	atag,videolfb-islcmfound = <1>;
 	atag,videolfb-fps= <6000>;
 	atag,videolfb-vramSize= <0x01800000>;
-	atag,videolfb-lcmname= "nt35521_hd720_dsi_vdo_rixin";
+	atag,videolfb-lcmname= "nt35521_dsi_vdo_yushun_cmi_hd720";
 };
 
 &bus {
@@ -101,7 +101,7 @@
 		status = "okay";
 		/* customization */
 		i2c_num = <2>;
-		i2c_addr = <0x48 0 0 0>;
+		i2c_addr = <0x60 0 0 0>;
 		polling_mode_ps = <0>;
 		polling_mode_als = <1>;
 		power_id = <0xffff>;
