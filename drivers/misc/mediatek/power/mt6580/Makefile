@@ -13,6 +13,14 @@
 
 #obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o pmic_chr_type_det.o mt6311.o
 obj-$(CONFIG_MTK_PMIC)          += pmic.o upmu_common.o pmic_auxadc.o pmic_chr_type_det.o
+#$(call all-subdir-src-or-makefile)
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
+ccflags-y += -Wno-unused-variable -g
+ccflags-y += -Wno-unused-function -g
+
 
 ifeq ($(CONFIG_MTK_PMIC_DVT_SUPPORT),y)
      obj-$(CONFIG_MTK_PMIC)     += pmic_dvt.o
@@ -23,6 +31,9 @@ obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_hal.o
 ifeq ($(CONFIG_MTK_BQ24261_SUPPORT),y)
      obj-$(CONFIG_MTK_SMART_BATTERY) += bq24261.o charging_hw_bq24261.o
 else
+	ifeq ($(CONFIG_MTK_BQ24158_SUPPORT),y)
+ 		obj-$(CONFIG_MTK_SMART_BATTERY) += bq24158.o charging_hw_bq24158.o
+	else
      ifeq ($(CONFIG_MTK_SWCHR_SUPPORT),y)
           obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_mt_sw_charger.o
      else
@@ -39,5 +50,6 @@ else
                endif
           endif
      endif
+	endif
 endif
 endif
