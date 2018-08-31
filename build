@@ -25,8 +25,8 @@ source ~/.yuvraj.conf
 
 # Common Declarations
 
-declare -a BUILDER_NAME="IBRAHIM FATHELBAB"
-declare -a BUILDER_NICKNAME="ibrahim1973"
+declare -a BUILDER_NAME="Yuvraj Saxena"
+declare -a BUILDER_NICKNAME="rad0n"
 declare -a COMPILED_KERNEL="out/arch/arm/boot/zImage-dtb"
 declare -a BUILDER_TG_NAME="akbon19"
 declare -a TESTER_TG_NAME="Pharaohs-Team"
