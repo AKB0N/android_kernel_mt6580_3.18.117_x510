@@ -25,4 +25,4 @@ subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/inc
 obj-$(CONFIG_MTK_LENS)    += main_lens.o
 
 obj-$(CONFIG_MTK_LENS_DW9714AF_SUPPORT)      += common/dw9714af/
-obj-$(CONFIG_MTK_LENS_BU6424AF_SUPPORT)      += common/bu6424af/
+obj-$(CONFIG_MTK_LENS_FM50AF_SUPPORT)      += common/fm50af/

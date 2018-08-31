@@ -15,12 +15,12 @@
 
 #define _LENS_LIST_H
 
-#define BU6424AF_SetI2Cclient BU6424AF_SetI2Cclient_Main
-#define BU6424AF_Ioctl BU6424AF_Ioctl_Main
-#define BU6424AF_Release BU6424AF_Release_Main
-extern int BU6424AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
-extern long BU6424AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
-extern int BU6424AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#define FM50AF_SetI2Cclient FM50AF_SetI2Cclient_Main
+#define FM50AF_Ioctl FM50AF_Ioctl_Main
+#define FM50AF_Release FM50AF_Release_Main
+extern int FM50AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long FM50AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int FM50AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
 #define DW9714AF_SetI2Cclient DW9714AF_SetI2Cclient_Main
 #define DW9714AF_Ioctl DW9714AF_Ioctl_Main
