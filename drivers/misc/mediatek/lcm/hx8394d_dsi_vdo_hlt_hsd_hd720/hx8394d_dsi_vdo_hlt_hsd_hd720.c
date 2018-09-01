@@ -1,6 +1,6 @@
 #ifndef BUILD_LK
 #include <linux/string.h>
-#include <mach/mt_gpio.h>
+#include <mt_gpio.h>
 #else
 #include <platform/mt_gpio.h>
 #endif
@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 //  Local Constants
 // ---------------------------------------------------------------------------
-#include <cust_adc.h>
+#include <mach/cust_adc.h>
 #define MIN_VOLTAGE (800)
 #define MAX_VOLTAGE (1200)
 #define LCM_ID (0x8394)
@@ -28,6 +28,9 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 #ifndef BUILD_LK
 extern atomic_t ESDCheck_byCPU;
 #endif
+
+unsigned int GPIO_LCD_BIAS_ENP_PIN;
+unsigned int GPIO_LCD_BIAS_ENN_PIN;
 
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 
@@ -121,6 +124,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_init(void)
 {
+	unsigned int  data_array[32];
 	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
     mt_set_gpio_out(GPIO_LCD_BIAS_ENN_PIN, GPIO_OUT_ONE);  
     SET_RESET_PIN(1);
@@ -128,18 +132,17 @@ static void lcm_init(void)
     MDELAY(10);
     SET_RESET_PIN(1);
     MDELAY(20);
-	unsigned int  data_array[32];
 			
 		data_array[0] = 0x00043902;
 		data_array[1] = 0x9483FFB9;
-		dsi_set_cmdq(&data_array, 2, 1);
+		dsi_set_cmdq(data_array, 2, 1);
 		MDELAY(10);
 		 
 		data_array[0] = 0x00033902; 						
-		data_array[1] = 0x008373BA;
+		data_array[1] = 0x008372BA;
 		//data_array[2] = 0x0909b265;
 		//data_array[3] = 0x00001040;
-		dsi_set_cmdq(&data_array, 2, 1);
+		dsi_set_cmdq(data_array, 2, 1);
 		MDELAY(3);
 		   
 		data_array[0] = 0x00103902; 						
@@ -147,35 +150,35 @@ static void lcm_init(void)
 		data_array[2] = 0xF1110413;
 		data_array[3] = 0x2355ec80;//0x23543A81
 		data_array[4] = 0x58D2C080;
-		dsi_set_cmdq(&data_array, 5, 1);
+		dsi_set_cmdq(data_array, 5, 1);
 		MDELAY(5);
 		 
 		data_array[0] = 0x000C3902; 						
 		data_array[1] = 0x106400B2;
 		data_array[2] = 0x081C1207;
 		data_array[3] = 0x004D1C08;
-		dsi_set_cmdq(&data_array, 4, 1);
+		dsi_set_cmdq(data_array, 4, 1);
 		
 		data_array[0] = 0x000D3902; 						
 		data_array[1] = 0x03FF00B4;
 		data_array[2] = 0x035a035a;//5a
 		data_array[3] = 0x016a015a;//
 		data_array[4] = 0x0000006a;
-		dsi_set_cmdq(&data_array, 5, 1);
+		dsi_set_cmdq(data_array, 5, 1);
 		
 		 
 		//0x00,0x00,0x00,0x00,0x0A,0x00,0x01,0x00,0xCC,0x00,0x00,0x00,0x88,0x88,0x88,0x88,0x88,0x88,0x88,0x88,0x88,0x88,0x01,0x67,0x45,0x23,0x01,0x23,0x88,0x88,0x88,0x88}},
 		  
 		data_array[0] = 0x07BC1500;//			  
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		 
 		 
 		data_array[0] = 0x00043902; 						
 		data_array[1] = 0x010E41BF;
-		dsi_set_cmdq(&data_array, 2, 1);
+		dsi_set_cmdq(data_array, 2, 1);
 		
 		data_array[0] = 0x55D21500; 		 
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		 
 		 
 		data_array[0] = 0x001f3902; 						
@@ -189,7 +192,7 @@ static void lcm_init(void)
 		data_array[8] = 0x00070710;
 		//data_array[9] = 0x0A000000;	
 		//data_array[10] = 0x00000100;					  
-		dsi_set_cmdq(&data_array, 9, 1);
+		dsi_set_cmdq(data_array, 9, 1);
 		
 		   
 		data_array[0] = 0x002D3902; 						
@@ -205,7 +208,7 @@ static void lcm_init(void)
 		data_array[10] = 0x18181818;
 		data_array[11] = 0x18181818;
 		data_array[12] = 0x00000018;
-		dsi_set_cmdq(&data_array, 13, 1);
+		dsi_set_cmdq(data_array, 13, 1);
 		
 		 
 		data_array[0] = 0x002D3902; 						
@@ -221,7 +224,7 @@ static void lcm_init(void)
 		data_array[10] = 0x18181818;
 		data_array[11] = 0x18181818;
 		data_array[12] = 0x00000018;
-		dsi_set_cmdq(&data_array, 13, 1);
+		dsi_set_cmdq(data_array, 13, 1);
 			  
 		data_array[0] = 0x002B3902;						  
 		data_array[1] = 0x1B1812E0;
@@ -235,39 +238,39 @@ static void lcm_init(void)
 		data_array[9] = 0x100D160B;
 		data_array[10] = 0x06121112;
 		data_array[11] = 0x00161210;
-		dsi_set_cmdq(&data_array, 12, 1);
+		dsi_set_cmdq(data_array, 12, 1);
 
 		data_array[0] = 0x09CC1500;  
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		
 		data_array[0] = 0x00033902; 						
 		data_array[1] = 0x001430C0;
-		dsi_set_cmdq(&data_array, 2, 1);
+		dsi_set_cmdq(data_array, 2, 1);
 		
 		   
 		data_array[0] = 0x00053902; 						
 		data_array[1] = 0x00C000C7;
 		data_array[2] = 0x000000C0;
-		dsi_set_cmdq(&data_array, 3, 1);
+		dsi_set_cmdq(data_array, 3, 1);
 		
 		 
 		data_array[0] = 0x00033902; 						
 		data_array[1] = 0x006D6DB6;//7c-85
-		dsi_set_cmdq(&data_array, 2, 1);
+		dsi_set_cmdq(data_array, 2, 1);
 		
 		data_array[0] = 0x88DF1500; 		   
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		
 		data_array[0] = 0x00351500;//			  
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		
 		 
 		data_array[0] = 0x00110500;   
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		MDELAY(120);
 		
 		data_array[0] = 0x00290500;   
-		dsi_set_cmdq(&data_array, 1, 1);
+		dsi_set_cmdq(data_array, 1, 1);
 		MDELAY(10);
 }
 
@@ -319,7 +322,7 @@ static void lcm_update(unsigned int x, unsigned int y,
 	data_array[5]= (y1_LSB);
 	data_array[6]= 0x002c3909;
 
-	dsi_set_cmdq(&data_array, 7, 0);
+	dsi_set_cmdq(data_array, 7, 0);
 
 }
 
@@ -337,14 +340,14 @@ static unsigned int lcm_compare_id(void)
 
 		array[0] = 0x00043902;
 		array[1] = 0x9483FFB9;
-		dsi_set_cmdq(&array, 2, 1);
+		dsi_set_cmdq(array, 2, 1);
 		MDELAY(10);
 		 
 		array[0] = 0x00033902; 						
 		array[1] = 0x008373BA;
 		//data_array[2] = 0x0909b265;
 		//data_array[3] = 0x00001040;
-		dsi_set_cmdq(&array, 2, 1);
+		dsi_set_cmdq(array, 2, 1);
 		MDELAY(3);	
 	
 	array[0] = 0x00043700;// read id return two byte,version and id
@@ -409,7 +412,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 			
 		array[0] = 0x00043902;
 		array[1] = 0x9483FFB9;
-		dsi_set_cmdq(&array, 2, 1);
+		dsi_set_cmdq(array, 2, 1);
 		MDELAY(10);		 	
 			
 			array[0] = 0x00043700;// read id return two byte,version and id
