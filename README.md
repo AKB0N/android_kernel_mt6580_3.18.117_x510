@@ -3,8 +3,9 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 ## Known information
 | Subsystem | Driver name | Availability | Working |
 |-----------|-------------|--------------|---------|
-| LCM driver | `nt35521_dsi_vdo_yushun_cmi_hd720` | Yes | Unknow |
-| Touch panel | `GT9XX (i2c 1-005D)` | Yes | Unknow |
+| LCM driver #1 | `nt35521_dsi_vdo_yushun_cmi_hd720` | Yes | Unknow |
+| LCM driver #2 | `hx8394d_dsi_vdo_hlt_hsd_hd720` | Yes | Yes |
+| Touch panel | `GT9XX (i2c 1-005D)` | Yes | No |
 | GPU | `Mali-400 MP` | Yes | Unknow |
 | Camera #1 | `ov8865_mipi_raw` | Yes | Unknow |
 | Camera #2 | `gc2755_mipi_raw` | Yes | Unknow |
@@ -13,8 +14,8 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 | Flash | `Samsung R821MB` | No | Unknow |
 | Lens #1 | `DW9714AF ` | Yes | Unknow |
 | Lens #2 | `FM50AF (i2c 0-000c)` | Yes | Unknow |
-| RAM | `1 GB LPDDR3_1066` | - | Unknow |
-| Sound | `mtsndcard` | - | Unknow |
+| RAM | `1 GB LPDDR3_1066` | - | Yes |
+| Sound | `mtsndcard` | - | No |
 | Accdet | `mt6580-accdet` | - | Unknow |
 | Other | `kd_camera_hw (i2c 0-007f)` | - | Unknow |
 
