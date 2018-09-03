@@ -16,18 +16,52 @@
 
 //Define for DLPT
 #define DISABLE_DLPT_FEATURE
+#define POWER_UVLO_VOLT_LEVEL 2600
+#define IMAX_MAX_VALUE 5500//mA
 
 #define POWER_INT0_VOLT 3400
 #define POWER_INT1_VOLT 3250
-#define POWER_INT2_VOLT 3100
+#define POWER_INT2_VOLT 3000
 
+#if defined(CONFIG_ARCH_MT6753)
 #define POWER_BAT_OC_CURRENT_H    4670
 #define POWER_BAT_OC_CURRENT_L    5500
-#define POWER_BAT_OC_CURRENT_H_RE 3400
-#define POWER_BAT_OC_CURRENT_L_RE 4000
+#define POWER_BAT_OC_CURRENT_H_RE 4670 //3400
+#define POWER_BAT_OC_CURRENT_L_RE 5500 //4000
+#else
+#define POWER_BAT_OC_CURRENT_H    3400
+#define POWER_BAT_OC_CURRENT_L    4000
+#define POWER_BAT_OC_CURRENT_H_RE 3400 //3400
+#define POWER_BAT_OC_CURRENT_L_RE 4000 //4000
+#endif
 
+#define DLPT_POWER_OFF_EN
+#define POWEROFF_BAT_CURRENT 3000//mA
+#define DLPT_POWER_OFF_THD 50
 
-#define BATTERY_MODULE_INIT
+//#define BATTERY_MODULE_INIT
+
+#if defined(MTK_BQ24196_SUPPORT)\
+	||defined(MTK_BQ24296_SUPPORT)\
+	||defined(MTK_BQ24160_SUPPORT)\
+	||defined(MTK_BQ24261_SUPPORT)
+#define SWCHR_POWER_PATH
+#endif
+
+#if defined(MTK_FAN5402_SUPPORT) \
+	 || defined(MTK_FAN5405_SUPPORT) \
+	  || defined(MTK_BQ24158_SUPPORT) \
+	   || defined(MTK_BQ24196_SUPPORT) \
+	    || defined(MTK_BQ24296_SUPPORT) \
+	     || defined(MTK_NCP1851_SUPPORT) \
+	      || defined(MTK_NCP1854_SUPPORT) \
+	       || defined(MTK_BQ24160_SUPPORT) \
+	        || defined(MTK_BQ24157_SUPPORT) \
+	         || defined(MTK_BQ24250_SUPPORT) \
+	          || defined(MTK_BQ24261_SUPPORT) 
+#define EXTERNAL_SWCHR_SUPPORT
+#endif
+
 /* ADC Channel Number */
 typedef enum {
 	//MT6325
