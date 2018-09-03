@@ -247,8 +247,8 @@
 	gpio21: gpio@21 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO21__FUNC_GPIO21>;
-			slew-rate = <0>;
-			
+			slew-rate = <1>;
+			bias-disable;
 			bias-pull-down = <00>;
 			output-low;
 			input-schmitt-enable = <0>;

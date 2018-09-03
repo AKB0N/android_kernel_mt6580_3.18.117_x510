@@ -110,18 +110,6 @@ config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP
 
 source "drivers/input/touchscreen/mediatek/GT9XX_hotknot_scp/Kconfig"
 
-config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_X510
-	bool "GT9XX_HOTKNOT_X510 for Mediatek package"
-	default n
-	help
-	  Say Y here if you have GT9XX_HOTKNOT_X510 touch panel.
-	  If unsure, say N.
-
-	  To compile this dirver as a module, choose M here: the
-	  module will be called.
-
-source "drivers/input/touchscreen/mediatek/GT9XX_hotknot_x510/Kconfig"
-
 
 config TOUCHSCREEN_MTK_FT5X0X
 	bool "FT5X0X for Mediatek package"

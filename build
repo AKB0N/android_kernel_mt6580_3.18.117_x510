@@ -134,9 +134,9 @@ fi
 
 function BUILD() {
 clear
-	export KBUILD_BUILD_USER=Yuvraj
-        export KBUILD_BUILD_HOST=∆Thestral
-        export KERNEL_NAME=snowy
+	export KBUILD_BUILD_USER=Ibrahim
+        export KBUILD_BUILD_HOST=∆Pharaohs-Team
+        export KERNEL_NAME=horus
         mkdir -p out
         rm *log
         echo "${PURP} READING DEFCONFIG..."
