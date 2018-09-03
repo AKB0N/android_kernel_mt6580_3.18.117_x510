@@ -16,8 +16,8 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 | Lens #2 | `FM50AF (i2c 0-000c)` | Yes | No |
 | RAM | `2GB & 1GB  LPDDR3_1066` | - | Yes |
 | Sound | `mtsndcard` | - | No |
-| Accdet | `mt6580-accdet` | - | Unknow |
-| Other | `kd_camera_hw (i2c 0-007f)` | - | No |
+| Accdet | `mt6580-accdet` | - | Yes |
+| Other | `kd_camera_hw (i2c 0-007f)` | - | Yes |
 
 ## Acknowledgements
 
