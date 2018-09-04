@@ -1,71 +1,17 @@
-/*****************************************************************************
+/*
+ * Copyright (C) 2015 MediaTek Inc.
  *
- * Filename:
- * ---------
- *    charging_pmic.c
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * Project:
- * --------
- *   ALPS_Software
- *
- * Description:
- * ------------
- *   This file implements the interface between BMT and ADC scheduler.
- *
- * Author:
- * -------
- *  Oscar Liu
- *
- *============================================================================
-  * $Revision:   1.0  $
- * $Modtime:   11 Aug 2005 10:28:16  $
- * $Log:   //mtkvs01/vmdata/Maui_sw/archives/mcu/hal/peripheral/inc/bmt_chr_setting.h-arc  $
- *             HISTORY
- * Below this line, this part is controlled by PVCS VM. DO NOT MODIFY!!
- *------------------------------------------------------------------------------
- *------------------------------------------------------------------------------
- * Upper this line, this part is controlled by PVCS VM. DO NOT MODIFY!!
- *============================================================================
- ****************************************************************************/
-#include <mt-plat/charging.h>
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include "bq24158.h"
-#include <mt-plat/upmu_common.h>
-//#include <mt-plat/mt_gpio.h>
-//#include <cust_gpio_usage.h>
-//#include <mt-plat/upmu_hw.h>
-//#include <linux/xlog.h>
-#include <linux/delay.h>
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/reboot.h>
-//#include <mt-plat/mt_sleep.h>
-#include <mt-plat/mt_boot.h>
-//#include <mt-plat/system.h>
-#include <cust_charging.h>
-
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <linux/mm_types.h>
-#include <linux/module.h>
-#include <linux/types.h>
-#include <linux/slab.h>
-#include <linux/vmalloc.h>
-#include <linux/gpio.h>
-#include <linux/device.h>
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#include <linux/of_device.h>
-#include <linux/regulator/consumer.h>
-#include <linux/clk.h>
-#include <linux/pinctrl/consumer.h>
-#include <linux/of_gpio.h>
-#endif
-
-
-/*#include "bq24158.h"
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -79,40 +25,23 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#include <mt-plat/upmu_common.h>*/
+#include <mt-plat/upmu_common.h>
 
- // ============================================================ //
- //define
- // ============================================================ //
 #define STATUS_OK	0
 #define STATUS_UNSUPPORTED	-1
 #define GETARRAYNUM(array) (sizeof(array)/sizeof(array[0]))
 
-
- // ============================================================ //
- //global variable
- // ============================================================ //
 static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 #define WIRELESS_CHARGER_EXIST_STATE 0
 int wireless_charger_gpio_number   = (168 | 0x80000000); 
 #endif
-/*
-#if 1
-#include <cust_gpio_usage.h>
-int gpio_number   = GPIO_SWCHARGER_EN_PIN; 
-int gpio_off_mode = GPIO_SWCHARGER_EN_PIN_M_GPIO;
-int gpio_on_mode  = GPIO_SWCHARGER_EN_PIN_M_GPIO;
-#else
-int gpio_number   = (19 | 0x80000000); 
-int gpio_off_mode = 0;
-int gpio_on_mode  = 0;
-#endif
-int gpio_off_dir  = GPIO_DIR_OUT;
-int gpio_off_out  = GPIO_OUT_ONE;
-int gpio_on_dir   = GPIO_DIR_OUT;
-int gpio_on_out   = GPIO_OUT_ZERO;
-*/
+
+int gpio_off_dir = GPIO_DIR_OUT;
+int gpio_off_out = GPIO_OUT_ONE;
+int gpio_on_dir = GPIO_DIR_OUT;
+int gpio_on_out = GPIO_OUT_ZERO;
+
 kal_bool charging_type_det_done = KAL_TRUE;
 
 const u32 VBAT_CV_VTH[]=
@@ -305,9 +234,9 @@ static void hw_bc11_dump_register(void)
  }
  
  
- static U32 hw_bc11_DCD(void)
+ static u32 hw_bc11_DCD(void)
  {
-	 U32 wChargerAvail = 0;
+	 u32 wChargerAvail = 0;
  
 	 //RG_BC11_IPU_EN[1.0] = 10
 	 //upmu_set_rg_bc11_ipu_en(0x2);
@@ -351,9 +280,9 @@ static void hw_bc11_dump_register(void)
  }
  
  
- static U32 hw_bc11_stepA1(void)
+ static u32 hw_bc11_stepA1(void)
  {
-	U32 wChargerAvail = 0;
+	u32 wChargerAvail = 0;
 
 	//RG_BC11_IPD_EN[1:0] = 01
 	//upmu_set_rg_bc11_ipd_en(0x1);
@@ -388,9 +317,9 @@ static void hw_bc11_dump_register(void)
  }
  
  
- static U32 hw_bc11_stepB1(void)
+ static u32 hw_bc11_stepB1(void)
  {
-	U32 wChargerAvail = 0;
+	u32 wChargerAvail = 0;
 	  
 	//RG_BC11_IPU_EN[1.0] = 01
 	//upmu_set_rg_bc11_ipu_en(0x1);
@@ -430,9 +359,9 @@ static void hw_bc11_dump_register(void)
  }
  
  
- static U32 hw_bc11_stepC1(void)
+ static u32 hw_bc11_stepC1(void)
  {
-	U32 wChargerAvail = 0;
+	u32 wChargerAvail = 0;
 	  
 	//RG_BC11_IPU_EN[1.0] = 01
 	//upmu_set_rg_bc11_ipu_en(0x1);
@@ -470,9 +399,9 @@ static void hw_bc11_dump_register(void)
  }
  
  
- static U32 hw_bc11_stepA2(void)
+ static u32 hw_bc11_stepA2(void)
  {
-	U32 wChargerAvail = 0;
+	u32 wChargerAvail = 0;
 	  
 	//RG_BC11_VSRC_EN[1.0] = 10 
 	//upmu_set_rg_bc11_vsrc_en(0x2);
@@ -513,9 +442,9 @@ static void hw_bc11_dump_register(void)
  }
  
  
- static U32 hw_bc11_stepB2(void)
+ static u32 hw_bc11_stepB2(void)
  {
-	U32 wChargerAvail = 0;
+	u32 wChargerAvail = 0;
  
 	//RG_BC11_IPU_EN[1:0]=10
 	//upmu_set_rg_bc11_ipu_en(0x2);
@@ -593,9 +522,9 @@ static void hw_bc11_dump_register(void)
   charger_enable_pin = of_get_named_gpio(node, "charger_enable", 0);
   gpio_request(charger_enable_pin, "charger_enable");*/
   
-  gpio_direction_output(charger_enable_pin, 0);
+  mt_set_gpio_mode(charger_enable_pin, 0);
  	//MDELAY(10);
-	gpio_set_value(charger_enable_pin, 0);
+	mt_set_gpio_dir(charger_enable_pin, 0);
 
 	//mt_set_gpio_mode(gpio_number,gpio_on_mode);  
 	//mt_set_gpio_dir(gpio_number,gpio_on_dir);
@@ -652,21 +581,21 @@ static void hw_bc11_dump_register(void)
    		if(mt_usb_is_device())
 #endif 			
 		{
-			bq24158_set_ce(1);
-			/*
+			bq24158_set_ce(0x1);
+/*
 			mt_set_gpio_mode(gpio_number,gpio_off_mode);  
 			mt_set_gpio_dir(gpio_number,gpio_off_dir);
 			mt_set_gpio_out(gpio_number,gpio_off_out);
-      */
-      gpio_direction_output(charger_enable_pin, 0);
+
+     // gpio_direction_output(charger_enable_pin, 0);
  	//MDELAY(10);
-	    gpio_set_value(charger_enable_pin, 1);
+	//	gpio_set_value(charger_enable_pin, 1);
 			
 			if (charging_get_error_state()) {
 				bq24158_set_ce(0x1);
 				battery_xlog_printk(BAT_LOG_CRTI,"[charging_enable] bq24158_set_hz_mode(0x1)\n");
 				bq24158_set_hz_mode(0x1);	// disable power path
-			}
+			}*/
 		}
 	}
 	return status;

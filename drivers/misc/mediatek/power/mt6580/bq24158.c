@@ -1,35 +1,4 @@
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/init.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-//#include <linux/earlysuspend.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-#include <linux/module.h>
-
-//#include <cust_acc.h>
-//#include <linux/hwmsensor.h>
-//#include <linux/hwmsen_dev.h>
-//#include <linux/sensors_io.h>
-//#include <linux/hwmsen_helper.h>
-//#include <linux/xlog.h>
-
-
-#include <mt-plat/mt_typedefs.h>
-#include <mt-plat/mt_gpio.h>
-//#include <mt-plat/mt_pm_ldo.h>
-
 #include "bq24158.h"
-#include "cust_charging.h"
-#include <mt-plat/charging.h>
-/*#include "bq24158.h"
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
 #include <linux/delay.h>
@@ -50,14 +19,9 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
-#include <mt-plat/charging.h>
-#include <mt-plat/mt_gpio.h>*/
 
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
+#include <mt-plat/charging.h>
+#include <mt-plat/mt_gpio.h>
 
 
 /**********************************************************
@@ -714,40 +678,29 @@ static struct platform_driver bq24158_user_space_driver = {
 //static struct i2c_board_info __initdata i2c_bq24158 = { I2C_BOARD_INFO("bq24158", (bq24158_SLAVE_ADDR_WRITE>>1))};
 unsigned int charger_enable_pin;
 static int __init bq24158_init(void)
-{    
-    int ret=0;
-    static struct device_node *node;
-    
-    battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] init start\n");
-    
-    //i2c_register_board_info(BQ24158_BUSNUM, &i2c_bq24158, 1);
+{
+	int ret = 0;
 
-    if(i2c_add_driver(&bq24158_driver)!=0)
-    {
-        battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] failed to register bq24158 i2c driver.\n");
-    }
-    else
-    {
-        battery_xlog_printk(BAT_LOG_CRTI,"[bq24158_init] Success to register bq24158 i2c driver.\n");
-    }
+	battery_log(BAT_LOG_CRTI, "[bq24158_init] init start\n");
 
-    // bq24158 user space access interface
-    ret = platform_device_register(&bq24158_user_space_device);
-    if (ret) {
-        battery_xlog_printk(BAT_LOG_CRTI,"****[bq24158_init] Unable to device register(%d)\n", ret);
-        return ret;
-    }    
-    ret = platform_driver_register(&bq24158_user_space_driver);
-    if (ret) {
-        battery_xlog_printk(BAT_LOG_CRTI,"****[bq24158_init] Unable to register driver (%d)\n", ret);
-        return ret;
-    }
-    
-    node = of_find_compatible_node(NULL, NULL, "mediatek,charger_enable_node");
-    charger_enable_pin = of_get_named_gpio(node, "charger_enable", 0);
-    gpio_request(charger_enable_pin, "charger_enable");
-    
-    return 0;        
+	if (i2c_add_driver(&bq24158_driver) != 0)
+		battery_log(BAT_LOG_CRTI, "[bq24158_init] failed to register bq24158 i2c driver.\n");
+	else
+		battery_log(BAT_LOG_CRTI, "[bq24158_init] Success to register bq24158 i2c driver.\n");
+
+	/* bq24158 user space access interface */
+	ret = platform_device_register(&bq24158_user_space_device);
+	if (ret) {
+		battery_log(BAT_LOG_CRTI, "****[bq24158_init] Unable to device register(%d)\n", ret);
+		return ret;
+	}
+	ret = platform_driver_register(&bq24158_user_space_driver);
+	if (ret) {
+		battery_log(BAT_LOG_CRTI, "****[bq24158_init] Unable to register driver (%d)\n", ret);
+		return ret;
+	}
+
+	return 0;
 }
 
 static void __exit bq24158_exit(void)
