@@ -38,6 +38,53 @@
 #define CM36283_ERR_GETGSENSORDATA			-5
 #define CM36283_ERR_IDENTIFICATION			-6
 
+/*----------------------------------------------------------------------------*/
+typedef enum{
+    CM36283_NOTIFY_PROXIMITY_CHANGE = 1,
+}CM36283_NOTIFY_TYPE;
+/*----------------------------------------------------------------------------*/
+typedef enum{
+    CM36283_CUST_ACTION_SET_CUST = 1,
+    CM36283_CUST_ACTION_CLR_CALI,
+    CM36283_CUST_ACTION_SET_CALI,
+    CM36283_CUST_ACTION_SET_PS_THRESHODL
+}CM36283_CUST_ACTION;
+/*----------------------------------------------------------------------------*/
+typedef struct
+{
+    uint16_t    action;
+}CM36283_CUST;
+/*----------------------------------------------------------------------------*/
+typedef struct
+{
+    uint16_t    action;
+    uint16_t    part;
+    int32_t    data[0];
+}CM36283_SET_CUST;
+/*----------------------------------------------------------------------------*/
+typedef CM36283_CUST CM36283_CLR_CALI;
+/*----------------------------------------------------------------------------*/
+typedef struct
+{
+    uint16_t    action;
+    int32_t     cali;
+}CM36283_SET_CALI;
+/*----------------------------------------------------------------------------*/
+typedef struct
+{
+    uint16_t    action;
+    int32_t     threshold[2];
+}CM36283_SET_PS_THRESHOLD;
+/*----------------------------------------------------------------------------*/
+typedef union
+{
+    uint32_t                    data[10];
+    CM36283_CUST                cust;
+    CM36283_SET_CUST            setCust;
+    CM36283_CLR_CALI            clearCali;
+    CM36283_SET_CALI            setCali;
+    CM36283_SET_PS_THRESHOLD    setPSThreshold;
+}CM36283_CUST_DATA;
+/*----------------------------------------------------------------------------*/
 
 #endif
-

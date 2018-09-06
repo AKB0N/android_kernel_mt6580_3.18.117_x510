@@ -1,3 +1,4 @@
+
 /* 
  * Author: yucong xiong <yucong.xion@mediatek.com>
  *
@@ -11,6 +12,11 @@
  * GNU General Public License for more details.
  *
  */
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#include <linux/gpio.h>
+
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
@@ -21,24 +27,36 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
-
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-
-#define POWER_NONE_MACRO MT65XX_POWER_NONE
-
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
+#include <linux/version.h>
+#include <linux/fs.h>   
+#include <linux/wakelock.h> 
 #include <asm/io.h>
-#include <cust_eint.h>
-#include <cust_alsps.h>
+#include <linux/module.h>
+
+
+//#include <linux/hwmsen_helper.h>
+//#include "cust_eint.h"
+//#include <linux/hwmsensor.h>
+//#include <linux/sensors_io.h>
+//#include <linux/hwmsen_dev.h>
+//#include <stk_cust_alsps.h>
 #include "cm36283.h"
-#include <linux/sched.h>
+#define DRIVER_VERSION          "3.5.2 20151230"
+//#define STK_PS_POLLING_LOG
+//#define STK_PS_DEBUG
+#define STK_TUNE0
+#define CALI_EVERY_TIME
+#define STK_ALS_FIR
+//#define STK_IRS
+//#define STK_CHK_REG
+//#define STK_GES
+
+/////
+#include "cust_alsps.h"  //wangxiqiang
+//extern struct alsps_hw* get_cust_alsps_hw(void);
+#include "alsps.h"
 /******************************************************************************
  * configuration
 *******************************************************************************/
@@ -77,10 +95,12 @@ extern void mt65xx_eint_registration(unsigned int eint_num, unsigned int is_deb_
 /*----------------------------------------------------------------------------*/
 static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id); 
 static int cm36283_i2c_remove(struct i2c_client *client);
-//static int cm36283_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
+static int cm36283_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int cm36283_i2c_suspend(struct i2c_client *client, pm_message_t msg);
 static int cm36283_i2c_resume(struct i2c_client *client);
 
+static int cm36283_local_init(void);
+static int cm36283_remove(void);
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id cm36283_i2c_id[] = {{CM36283_DEV_NAME,0},{}};
 static struct i2c_board_info __initdata i2c_cm36283={ I2C_BOARD_INFO(CM36283_DEV_NAME, 0x60)};
@@ -90,6 +110,9 @@ struct cm36283_priv {
 	struct alsps_hw  *hw;
 	struct i2c_client *client;
 	struct work_struct	eint_work;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    struct work_struct init_done_work;
+#endif
 
 	/*misc*/
 	u16 		als_modulus;
@@ -107,9 +130,9 @@ struct cm36283_priv {
 	
 	
 	/*data*/
-	u16			als;
-	u8 			ps;
-	u8			_align;
+	u32			als;
+	u32 		ps;
+	//u8			_align;
 	u16			als_level_num;
 	u16			als_value_num;
 	u32			als_level[C_CUST_ALS_LEVEL-1];
@@ -132,7 +155,6 @@ struct cm36283_priv {
 	#endif     
 };
 /*----------------------------------------------------------------------------*/
-
 static struct i2c_driver cm36283_i2c_driver = {	
 	.probe      = cm36283_i2c_probe,
 	.remove     = cm36283_i2c_remove,
@@ -159,9 +181,15 @@ struct PS_CALI_DATA_STRUCT
 static struct i2c_client *cm36283_i2c_client = NULL;
 static struct cm36283_priv *g_cm36283_ptr = NULL;
 static struct cm36283_priv *cm36283_obj = NULL;
-static struct platform_driver cm36283_alsps_driver;
-//static struct PS_CALI_DATA_STRUCT ps_cali={0,0,0};
-static int intr_flag = 1; //hw default away after enable.
+
+static int cm36283_init_flag =-1; // 0<==>OK -1 <==> fail
+
+static struct alsps_init_info cm36283_init_info = {
+		.name = "cm36283",
+		.init = cm36283_local_init,
+		.uninit = cm36283_remove,
+	
+};
 /*----------------------------------------------------------------------------*/
 
 static DEFINE_MUTEX(cm36283_mutex);
@@ -184,45 +212,71 @@ typedef enum {
     CMC_TRC_DEBUG   = 0x8000,
 } CMC_TRC;
 /*-----------------------------------------------------------------------------*/
+#ifndef CUSTOM_KERNEL_SENSORHUB
+static void cm36283_eint_unmask(void)
+{
+#ifdef CUST_EINT_ALS_NUM
+#ifdef CUST_EINT_ALS_TYPE
+	mt_eint_unmask(CUST_EINT_ALS_NUM);
+#else
+	mt65xx_eint_unmask(CUST_EINT_ALS_NUM);
+#endif
+#else
+    APS_ERR("CUST_EINT_ALS_NUM undefined\n");
+#endif
+}
+#endif
+/*-----------------------------------------------------------------------------*/
+#ifndef CUSTOM_KERNEL_SENSORHUB
 static int cm36283_enable_eint(struct i2c_client *client)
 {
 	//struct cm36283_priv *obj = i2c_get_clientdata(client);        
 
 	//g_cm36283_ptr = obj;
-	
+
+#ifdef GPIO_ALS_EINT_PIN
 	mt_set_gpio_mode(GPIO_ALS_EINT_PIN, GPIO_ALS_EINT_PIN_M_EINT);
 	mt_set_gpio_dir(GPIO_ALS_EINT_PIN, GPIO_DIR_IN);
 	mt_set_gpio_pull_enable(GPIO_ALS_EINT_PIN, TRUE);
 	mt_set_gpio_pull_select(GPIO_ALS_EINT_PIN, GPIO_PULL_UP); 
-	
-#ifdef CUST_EINT_ALS_TYPE
-		mt_eint_unmask(CUST_EINT_ALS_NUM);
 #else
-		mt65xx_eint_unmask(CUST_EINT_ALS_NUM);
+    APS_ERR("GPIO_ALS_EINT_PIN undefined\n");
 #endif
+	
+    cm36283_eint_unmask();
 
     return 0;
 }
-
+#endif//#ifndef CUSTOM_KERNEL_SENSORHUB
+#ifndef CUSTOM_KERNEL_SENSORHUB
 static int cm36283_disable_eint(struct i2c_client *client)
 {
 	//struct cm36283_priv *obj = i2c_get_clientdata(client);        
 
 	//g_cm36283_ptr = obj;
 
-#ifdef CUST_EINT_ALS_TYPE
-		mt_eint_mask(CUST_EINT_ALS_NUM);
-#else
-		mt65xx_eint_mask(CUST_EINT_ALS_NUM);
-#endif
-    
+#ifdef GPIO_ALS_EINT_PIN
 	mt_set_gpio_mode(GPIO_ALS_EINT_PIN, GPIO_ALS_EINT_PIN_M_EINT);
 	mt_set_gpio_dir(GPIO_ALS_EINT_PIN, GPIO_DIR_IN);
 	mt_set_gpio_pull_enable(GPIO_ALS_EINT_PIN, FALSE);
 	mt_set_gpio_pull_select(GPIO_ALS_EINT_PIN, GPIO_PULL_DOWN); 
+#else
+    APS_ERR("GPIO_ALS_EINT_PIN undefined\n");
+#endif
+
+#ifdef CUST_EINT_ALS_NUM
+#ifdef CUST_EINT_ALS_TYPE
+    mt_eint_mask(CUST_EINT_ALS_NUM);
+#else
+    mt65xx_eint_mask(CUST_EINT_ALS_NUM);
+#endif
+#else
+    APS_ERR("CUST_EINT_ALS_NUM undefined\n");
+#endif
 
     return 0;
 }
+#endif//#ifndef CUSTOM_KERNEL_SENSORHUB
 int CM36283_i2c_master_operate(struct i2c_client *client, const char *buf, int count, int i2c_flag)
 {
 	int res = 0;
@@ -259,6 +313,7 @@ int CM36283_i2c_master_operate(struct i2c_client *client, const char *buf, int c
 /*----------------------------------------------------------------------------*/
 static void cm36283_power(struct alsps_hw *hw, unsigned int on) 
 {
+#ifndef FPGA_EARLY_PORTING
 	static unsigned int power_on = 0;
 
 	APS_LOG("power %s\n", on ? "on" : "off");
@@ -285,172 +340,266 @@ static void cm36283_power(struct alsps_hw *hw, unsigned int on)
 		}
 	}
 	power_on = on;
+#endif
 }
 /********************************************************************/
 int cm36283_enable_ps(struct i2c_client *client, int enable)
 {
-	struct cm36283_priv *obj = i2c_get_clientdata(client);
-	int res;
-	u8 databuf[3];
+    struct cm36283_priv *obj = i2c_get_clientdata(client);
+    int res;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    SCP_SENSOR_HUB_DATA req;
+    int len;
+#else
+    u8 databuf[3];
+#endif
 
-	if(enable == 1)
-	{
-		res = cm36283_enable_eint(client);
-		if(res!=0)
-		{
-			APS_ERR("disable eint fail: %d\n", res);
-			return res;
-		}	
-		
-			APS_LOG("cm36283_enable_ps enable_ps\n");
-			databuf[0]= CM36283_REG_PS_CONF3_MS;
-			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_PS_EXIT_ERR;
-			}
-			APS_LOG("CM36283_REG_PS_CONF3_MS value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+    if(enable == 1)
+    {
+        APS_LOG("cm36283_enable_ps enable_ps\n");
+#ifdef CUSTOM_KERNEL_SENSORHUB
+        req.activate_req.sensorType = ID_PROXIMITY;
+        req.activate_req.action = SENSOR_HUB_ACTIVATE;
+        req.activate_req.enable = enable;
+        len = sizeof(req.activate_req);
+        res = SCP_sensorHub_req_send(&req, &len, 1);
+        if (res)
+        {
+            APS_ERR("SCP_sensorHub_req_send!\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+#else
+        res = cm36283_enable_eint(client);
+        if(res!=0)
+        {
+            APS_ERR("disable eint fail: %d\n", res);
+            return res;
+        }	
 
-			databuf[0]= CM36283_REG_PS_CANC;
-			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_PS_EXIT_ERR;
-			}
-			APS_LOG("CM36283_REG_PS_CANC value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
-			
-			databuf[0]= CM36283_REG_PS_CONF1_2;
-			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_PS_EXIT_ERR;
-			}
-			APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+        databuf[0]= CM36283_REG_PS_CONF3_MS;
+        res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+        APS_LOG("CM36283_REG_PS_CONF3_MS value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 
-			databuf[2] = databuf[1];
-			databuf[1] = databuf[0]&0xFE;
-			
-			databuf[0]= CM36283_REG_PS_CONF1_2;
-			res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_PS_EXIT_ERR;
-			}
-			atomic_set(&obj->ps_deb_on, 1);
-			atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
-			intr_flag = 1; //reset hw status to away after enable.
-		}
-	else{
-			APS_LOG("cm36283_enable_ps disable_ps\n");
-			databuf[0]= CM36283_REG_PS_CONF1_2;
-			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_PS_EXIT_ERR;
-			}
-			
-			APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+        databuf[0]= CM36283_REG_PS_CANC;
+        res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+        APS_LOG("CM36283_REG_PS_CANC value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 
-			databuf[2] = databuf[1];
-			databuf[1] = databuf[0]|0x01;	
-			databuf[0]= CM36283_REG_PS_CONF1_2;
-			
-			res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_PS_EXIT_ERR;
-			}
-			atomic_set(&obj->ps_deb_on, 0);
-		
-		res = cm36283_disable_eint(client);
-		if(res!=0)
-		{
-			APS_ERR("disable eint fail: %d\n", res);
-			return res;
-		}
-		}
-	
-	return 0;
-	ENABLE_PS_EXIT_ERR:
-	return res;
+        databuf[0]= CM36283_REG_PS_CONF1_2;
+        res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+        APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+
+        databuf[2] = databuf[1];
+        databuf[1] = databuf[0]&0xFE;
+
+        databuf[0]= CM36283_REG_PS_CONF1_2;
+        res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+#endif
+        atomic_set(&obj->ps_deb_on, 1);
+        atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
+    }
+    else{
+        APS_LOG("cm36283_enable_ps disable_ps\n");
+#ifdef CUSTOM_KERNEL_SENSORHUB
+        req.activate_req.sensorType = ID_PROXIMITY;
+        req.activate_req.action = SENSOR_HUB_ACTIVATE;
+        req.activate_req.enable = enable;
+        len = sizeof(req.activate_req);
+        res = SCP_sensorHub_req_send(&req, &len, 1);
+        if (res)
+        {
+            APS_ERR("SCP_sensorHub_req_send!\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+#else
+        databuf[0]= CM36283_REG_PS_CONF1_2;
+        res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+
+        APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+
+        databuf[2] = databuf[1];
+        databuf[1] = databuf[0]|0x01;	
+        databuf[0]= CM36283_REG_PS_CONF1_2;
+
+        res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_PS_EXIT_ERR;
+        }
+        
+        res = cm36283_disable_eint(client);
+        if(res!=0)
+        {
+            APS_ERR("disable eint fail: %d\n", res);
+            return res;
+        }
+#endif
+        atomic_set(&obj->ps_deb_on, 0);
+    }
+
+    return 0;
+    ENABLE_PS_EXIT_ERR:
+    return res;
 }
 /********************************************************************/
 int cm36283_enable_als(struct i2c_client *client, int enable)
 {
 	struct cm36283_priv *obj = i2c_get_clientdata(client);
 	int res;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    SCP_SENSOR_HUB_DATA req;
+    int len;
+#else
 	u8 databuf[3];
+#endif
 
-	if(enable == 1)
-		{
-			APS_LOG("cm36283_enable_als enable_als\n");
-			databuf[0] = CM36283_REG_ALS_CONF;
-			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_ALS_EXIT_ERR;
-			}
-			
-			APS_LOG("CM36283_REG_ALS_CONF value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+    if(enable == 1)
+    {
+        APS_LOG("cm36283_enable_als enable_als\n");
+#ifdef CUSTOM_KERNEL_SENSORHUB
+        req.activate_req.sensorType = ID_PROXIMITY;
+        req.activate_req.action = SENSOR_HUB_ACTIVATE;
+        req.activate_req.enable = enable;
+        len = sizeof(req.activate_req);
+        res = SCP_sensorHub_req_send(&req, &len, 1);
+        if (res)
+        {
+            APS_ERR("SCP_sensorHub_req_send!\n");
+            goto ENABLE_ALS_EXIT_ERR;
+        }
+#else
+        databuf[0] = CM36283_REG_ALS_CONF;
+        res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_ALS_EXIT_ERR;
+        }
 
-			databuf[2] = databuf[1];
-			databuf[1] = databuf[0]&0xFE;		
-			databuf[0] = CM36283_REG_ALS_CONF;
-			client->addr &=I2C_MASK_FLAG;
-			
-			res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_ALS_EXIT_ERR;
-			}
-			atomic_set(&obj->als_deb_on, 1);
-			atomic_set(&obj->als_deb_end, jiffies+atomic_read(&obj->als_debounce)/(1000/HZ));
-		}
-	else{
-			APS_LOG("cm36283_enable_als disable_als\n");
-			databuf[0] = CM36283_REG_ALS_CONF;
-			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_ALS_EXIT_ERR;
-			}
-			
-			APS_LOG("CM36283_REG_ALS_CONF value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+        APS_LOG("CM36283_REG_ALS_CONF value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 
-			databuf[2] = databuf[1];
-			databuf[1] = databuf[0]|0x01;
-			databuf[0] = CM36283_REG_ALS_CONF;
-			client->addr &=I2C_MASK_FLAG;
+        databuf[2] = databuf[1];
+        databuf[1] = databuf[0]&0xFE;		
+        databuf[0] = CM36283_REG_ALS_CONF;
+        client->addr &=I2C_MASK_FLAG;
 
-			res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-			if(res < 0)
-			{
-				APS_ERR("i2c_master_send function err\n");
-				goto ENABLE_ALS_EXIT_ERR;
-			}
-			atomic_set(&obj->als_deb_on, 0);
-		}
+        res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_ALS_EXIT_ERR;
+        }
+#endif
+        atomic_set(&obj->als_deb_on, 1);
+        atomic_set(&obj->als_deb_end, jiffies+atomic_read(&obj->als_debounce)/(1000/HZ));
+    }
+    else{
+        APS_LOG("cm36283_enable_als disable_als\n");
+#ifdef CUSTOM_KERNEL_SENSORHUB
+        req.activate_req.sensorType = ID_PROXIMITY;
+        req.activate_req.action = SENSOR_HUB_ACTIVATE;
+        req.activate_req.enable = enable;
+        len = sizeof(req.activate_req);
+        res = SCP_sensorHub_req_send(&req, &len, 1);
+        if (res)
+        {
+            APS_ERR("SCP_sensorHub_req_send!\n");
+            goto ENABLE_ALS_EXIT_ERR;
+        }
+#else
+        databuf[0] = CM36283_REG_ALS_CONF;
+        res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_ALS_EXIT_ERR;
+        }
+
+        APS_LOG("CM36283_REG_ALS_CONF value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+
+        databuf[2] = databuf[1];
+        databuf[1] = databuf[0]|0x01;
+        databuf[0] = CM36283_REG_ALS_CONF;
+        client->addr &=I2C_MASK_FLAG;
+
+        res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+        if(res < 0)
+        {
+            APS_ERR("i2c_master_send function err\n");
+            goto ENABLE_ALS_EXIT_ERR;
+        }
+#endif
+        atomic_set(&obj->als_deb_on, 0);
+    }
 	return 0;
 	ENABLE_ALS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
-long cm36283_read_ps(struct i2c_client *client, u8 *data)
+long cm36283_read_ps(struct i2c_client *client, u32 *data)
 {
 	long res;
+    struct cm36283_priv *obj = i2c_get_clientdata(client);
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    SCP_SENSOR_HUB_DATA req;
+    int len;
+#else
 	u8 databuf[2];
-	struct cm36283_priv *obj = i2c_get_clientdata(client);
+#endif
 	//APS_FUN(f);
 
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    req.get_data_req.sensorType = ID_PROXIMITY;
+    req.get_data_req.action = SENSOR_HUB_GET_DATA;
+    len = sizeof(req.get_data_req);
+    res = SCP_sensorHub_req_send(&req, &len, 1);
+    if (res)
+    {
+        APS_ERR("SCP_sensorHub_req_send!\n");
+        goto READ_PS_EXIT_ERR;
+    }
+
+    len -= offsetof(SCP_SENSOR_HUB_GET_DATA_RSP, u8Data);
+
+    if (len >= 0 && len < 4)
+    {
+        memcpy(data, &(req.get_data_rsp.u8Data), len);
+    }
+    else
+    {
+        APS_ERR("data length fail : %d\n", len);
+    }
+
+    if(atomic_read(&obj->trace) & CMC_TRC_PS_DATA)
+	{
+        //show data
+	}
+#else
 	databuf[0] = CM36283_REG_PS_DATA;
 	res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
 	if(res < 0)
@@ -465,18 +614,53 @@ long cm36283_read_ps(struct i2c_client *client, u8 *data)
 		*data = 0;
 	else
 		*data = databuf[0] - obj->ps_cali;
+#endif
+
 	return 0;
 	READ_PS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
-long cm36283_read_als(struct i2c_client *client, u16 *data)
+long cm36283_read_als(struct i2c_client *client, u32 *data)
 {
 	long res;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    struct cm36283_priv *obj = i2c_get_clientdata(client);
+    SCP_SENSOR_HUB_DATA req;
+    int len;
+#else
 	u8 databuf[2];
+#endif
 
 	//APS_FUN(f);
-	
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    req.get_data_req.sensorType = ID_LIGHT;
+    req.get_data_req.action = SENSOR_HUB_GET_DATA;
+    len = sizeof(req.get_data_req);
+    res = SCP_sensorHub_req_send(&req, &len, 1);
+    if (res)
+    {
+        APS_ERR("SCP_sensorHub_req_send!\n");
+        goto READ_ALS_EXIT_ERR;
+    }
+
+    len -= offsetof(SCP_SENSOR_HUB_GET_DATA_RSP, u8Data);
+
+    if (len >= 0 && len < 4)
+    {
+        memcpy(data, &(req.get_data_rsp.u8Data), len);
+    }
+    else
+    {
+        APS_ERR("data length fail : %d\n", len);
+    }
+
+    if(atomic_read(&obj->trace) & CMC_TRC_ALS_DATA)
+	{
+        //show data
+	}
+#else
 	databuf[0] = CM36283_REG_ALS_DATA;
 	res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
 	if(res < 0)
@@ -488,16 +672,21 @@ long cm36283_read_als(struct i2c_client *client, u16 *data)
 	//APS_LOG("CM36283_REG_ALS_DATA value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 
 	*data = ((databuf[1]<<8)|databuf[0]);
+#endif
+    
 	return 0;
 	READ_ALS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
-static int cm36283_get_ps_value(struct cm36283_priv *obj, u8 ps)
+static int cm36283_get_ps_value(struct cm36283_priv *obj, u32 ps)
 {
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    return ps;
+#else
 	int val, mask = atomic_read(&obj->ps_mask);
 	int invalid = 0;
-	val = intr_flag; //value between high/low threshold should sync. with hw status.
+	val = 0;
 
 	if(ps > atomic_read(&obj->ps_thd_val_high))
 	{
@@ -559,10 +748,14 @@ static int cm36283_get_ps_value(struct cm36283_priv *obj, u8 ps)
 		}
 		return -1;
 	}	
+#endif
 }
 /********************************************************************/
-static int cm36283_get_als_value(struct cm36283_priv *obj, u16 als)
+static int cm36283_get_als_value(struct cm36283_priv *obj, u32 als)
 {
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    return als;
+#else
 		int idx;
 		int invalid = 0;
 		for(idx = 0; idx < obj->als_level_num; idx++)
@@ -626,7 +819,7 @@ static int cm36283_get_als_value(struct cm36283_priv *obj, u16 als)
 			}
 			return -1;
 		}
-
+#endif
 }
 
 
@@ -670,7 +863,7 @@ static ssize_t cm36283_store_config(struct device_driver *ddri, const char *buf,
 	}
 	else
 	{
-		APS_ERR("invalid content: '%s', length = %d\n", buf, count);
+		APS_ERR("invalid content: '%s', length = %d\n", buf, (int)count);
 	}
 	return count;    
 }
@@ -703,7 +896,7 @@ static ssize_t cm36283_store_trace(struct device_driver *ddri, const char *buf, 
 	}
 	else 
 	{
-		APS_ERR("invalid content: '%s', length = %d\n", buf, count);
+		APS_ERR("invalid content: '%s', length = %d\n", buf, (int)count);
 	}
 	return count;    
 }
@@ -729,7 +922,7 @@ static ssize_t cm36283_show_als(struct device_driver *ddri, char *buf)
 /*----------------------------------------------------------------------------*/
 static ssize_t cm36283_show_ps(struct device_driver *ddri, char *buf)
 {
-	ssize_t res;
+	int res;
 	if(!cm36283_obj)
 	{
 		APS_ERR("cm3623_obj is null!!\n");
@@ -1003,6 +1196,9 @@ static int cm36283_create_attr(struct device_driver *driver)
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------interrupt functions--------------------------------*/
+static int intr_flag = 0;
+/*----------------------------------------------------------------------------*/
+#ifndef CUSTOM_KERNEL_SENSORHUB
 static int cm36283_check_intr(struct i2c_client *client) 
 {
 	int res;
@@ -1046,45 +1242,83 @@ static int cm36283_check_intr(struct i2c_client *client)
 	APS_ERR("cm36283_check_intr dev: %d\n", res);
 	return res;
 }
+#endif//#ifndef CUSTOM_KERNEL_SENSORHUB
 /*----------------------------------------------------------------------------*/
 static void cm36283_eint_work(struct work_struct *work)
 {
+    int res = 0;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+#else
 	struct cm36283_priv *obj = (struct cm36283_priv *)container_of(work, struct cm36283_priv, eint_work);
-	hwm_sensor_data sensor_data;
-	int res = 0;
-	//res = cm36283_check_intr(obj->client);
+#endif//#ifdef CUSTOM_KERNEL_SENSORHUB
+	
 	APS_LOG("cm36283 int top half time = %lld\n", int_top_time);
-#if 1
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    res = ps_report_interrupt_data(intr_flag);
+    if(res != 0)
+    {
+        APS_ERR("cm36283_eint_work err: %d\n", res);
+    }
+#else
 	res = cm36283_check_intr(obj->client);
 	if(res != 0){
 		goto EXIT_INTR_ERR;
 	}else{
-		sensor_data.values[0] = intr_flag;
-		sensor_data.value_divide = 1;
-		sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;	
-
+	    APS_LOG("cm36283 interrupt value = %d\n", intr_flag);
+		res = ps_report_interrupt_data(intr_flag);
 	}
-	if((res = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
-		{
-		  APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", res);
-		  goto EXIT_INTR_ERR;
-		}
-#endif
-#ifdef CUST_EINT_ALS_TYPE
-	mt_eint_unmask(CUST_EINT_ALS_NUM);
-#else
-	mt65xx_eint_unmask(CUST_EINT_ALS_NUM);
-#endif
+
+
+    cm36283_eint_unmask();
 	return;
 	EXIT_INTR_ERR:
-#ifdef CUST_EINT_ALS_TYPE
-	mt_eint_unmask(CUST_EINT_ALS_NUM);
-#else
-	mt65xx_eint_unmask(CUST_EINT_ALS_NUM);
-#endif
-	APS_ERR("cm36283_eint_work err: %d\n", res);
+    cm36283_eint_unmask();
+    APS_ERR("cm36283_eint_work err: %d\n", res);
+#endif//#ifdef CUSTOM_KERNEL_SENSORHUB
 }
 /*----------------------------------------------------------------------------*/
+static void cm36283_init_done_work(struct work_struct *work)
+{
+    struct cm36283_priv *obj = cm36283_obj;
+    CM36283_CUST_DATA *p_cust_data;
+    SCP_SENSOR_HUB_DATA data;
+    int max_cust_data_size_per_packet;
+    int i;
+    uint sizeOfCustData;
+    uint len;
+    char *p = (char *)obj->hw;
+
+    p_cust_data = (CM36283_CUST_DATA *)data.set_cust_req.custData;
+
+    data.set_cust_req.sensorType = ID_LIGHT;
+    data.set_cust_req.action = SENSOR_HUB_SET_CUST;
+    sizeOfCustData = sizeof(*(obj->hw));
+    p_cust_data->setCust.action = CM36283_CUST_ACTION_SET_CUST;
+    max_cust_data_size_per_packet = sizeof(data.set_cust_req.custData) - offsetof(CM36283_SET_CUST, data);
+    
+    for (i=0;sizeOfCustData>0;i++)
+    {
+        p_cust_data->setCust.part = i;
+        if (sizeOfCustData > max_cust_data_size_per_packet)
+        {
+            len = max_cust_data_size_per_packet;
+        }
+        else
+        {
+            len = sizeOfCustData;
+        }
+
+        memcpy(p_cust_data->setCust.data, p, len);
+        sizeOfCustData -= len;
+        p += len;
+        
+        len += offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData) + offsetof(CM36283_SET_CUST, data);
+        SCP_sensorHub_req_send(&data, &len, 1);
+    }
+}
+/*----------------------------------------------------------------------------*/
+#ifndef CUSTOM_KERNEL_SENSORHUB
 static void cm36283_eint_func(void)
 {
 	struct cm36283_priv *obj = g_cm36283_ptr;
@@ -1095,18 +1329,65 @@ static void cm36283_eint_func(void)
 	int_top_time = sched_clock();
 	schedule_work(&obj->eint_work);
 }
+#else
+static int cm36283_irq_handler(void* data, uint len)
+{
+	struct cm36283_priv *obj = cm36283_obj;
+    SCP_SENSOR_HUB_DATA_P rsp = (SCP_SENSOR_HUB_DATA_P)data;
+    
+	if(!obj)
+	{
+		return -1;
+	}
 
+    switch(rsp->rsp.action)
+    {
+        case SENSOR_HUB_NOTIFY:
+            switch(rsp->notify_rsp.event)
+            {
+                case SCP_INIT_DONE:
+                    schedule_work(&obj->init_done_work);
+                    break;
+                case SCP_NOTIFY:
+                    if (CM36283_NOTIFY_PROXIMITY_CHANGE == rsp->notify_rsp.data[0])
+                    {
+                        intr_flag = rsp->notify_rsp.data[1];
+                        schedule_work(&obj->eint_work);
+                    }
+                    else
+                    {
+                        APS_ERR("Unknow notify");
+                    }
+                default:
+                    APS_ERR("Error sensor hub notify");
+                    break;
+            }
+            break;
+        default:
+            APS_ERR("Error sensor hub action");
+            break;
+    }
+
+    return 0;
+}
+#endif//#ifdef CUSTOM_KERNEL_SENSORHUB
+/*----------------------------------------------------------------------------*/
 int cm36283_setup_eint(struct i2c_client *client)
 {
+    int err = 0;
 	struct cm36283_priv *obj = i2c_get_clientdata(client);        
 
 	g_cm36283_ptr = obj;
-	
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+    err = SCP_sensorHub_rsp_registration(ID_PROXIMITY, cm36283_irq_handler);
+#else	
 	mt_set_gpio_dir(GPIO_ALS_EINT_PIN, GPIO_DIR_IN);
 	mt_set_gpio_mode(GPIO_ALS_EINT_PIN, GPIO_ALS_EINT_PIN_M_EINT);
 	mt_set_gpio_pull_enable(GPIO_ALS_EINT_PIN, TRUE);
 	mt_set_gpio_pull_select(GPIO_ALS_EINT_PIN, GPIO_PULL_UP);
 
+#ifdef CUST_EINT_ALS_NUM
 #ifdef CUST_EINT_ALS_TYPE
 	mt_eint_set_hw_debounce(CUST_EINT_ALS_NUM, CUST_EINT_ALS_DEBOUNCE_CN);
 	mt_eint_registration(CUST_EINT_ALS_NUM, CUST_EINT_ALS_TYPE, cm36283_eint_func, 0);
@@ -1116,13 +1397,13 @@ int cm36283_setup_eint(struct i2c_client *client)
 	mt65xx_eint_set_hw_debounce(CUST_EINT_ALS_NUM, CUST_EINT_ALS_DEBOUNCE_CN);
 	mt65xx_eint_registration(CUST_EINT_ALS_NUM, CUST_EINT_ALS_DEBOUNCE_EN, CUST_EINT_ALS_POLARITY, cm36283_eint_func, 0);
 #endif
-
-#ifdef CUST_EINT_ALS_TYPE
-	mt_eint_unmask(CUST_EINT_ALS_NUM);
 #else
-	mt65xx_eint_unmask(CUST_EINT_ALS_NUM);  
+    APS_ERR("CUST_EINT_ALS_NUM undefined\n");
 #endif
-    return 0;
+
+    cm36283_eint_unmask();
+#endif//#ifdef CUSTOM_KERNEL_SENSORHUB
+    return err;
 }
 /*-------------------------------MISC device related------------------------------------------*/
 
@@ -1147,6 +1428,7 @@ static int cm36283_release(struct inode *inode, struct file *file)
 	return 0;
 }
 /************************************************************/
+#ifdef CUSTOM_KERNEL_SENSORHUB
 static int set_psensor_threshold(struct i2c_client *client)
 {
 	struct cm36283_priv *obj = i2c_get_clientdata(client);
@@ -1163,8 +1445,8 @@ static int set_psensor_threshold(struct i2c_client *client)
 		return -1;
 	}
 	return 0;
-
 }
+#endif
 static long cm36283_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 		struct i2c_client *client = (struct i2c_client*)file->private_data;
@@ -1176,6 +1458,13 @@ static long cm36283_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 		int ps_result;
 		int ps_cali;
 		int threshold[2];
+        SCP_SENSOR_HUB_DATA data;
+        CM36283_CUST_DATA *pCustData;
+        int len;
+
+        data.set_cust_req.sensorType = ID_PROXIMITY;
+        data.set_cust_req.action = SENSOR_HUB_SET_CUST;
+        pCustData = (CM36283_CUST_DATA *)(&data.set_cust_req.custData);
 		
 		switch (cmd)
 		{
@@ -1334,6 +1623,14 @@ static long cm36283_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 				}
 				if(dat == 0)
 					obj->ps_cali = 0;
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+                pCustData->clearCali.action = CM36283_CUST_ACTION_CLR_CALI;
+                len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData) + sizeof(pCustData->clearCali);
+                
+                err = SCP_sensorHub_req_send(&data, &len, 1);
+#endif
+                
 				break;
 
 			case ALSPS_IOCTL_GET_CALI:
@@ -1353,6 +1650,15 @@ static long cm36283_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 				}
 
 				obj->ps_cali = ps_cali;
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+                pCustData->setCali.action = CM36283_CUST_ACTION_SET_CALI;
+                pCustData->setCali.cali = ps_cali;
+                len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData) + sizeof(pCustData->setCali);
+                
+                err = SCP_sensorHub_req_send(&data, &len, 1);
+#endif
+
 				break;
 
 			case ALSPS_SET_PS_THRESHOLD:
@@ -1365,7 +1671,16 @@ static long cm36283_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 				atomic_set(&obj->ps_thd_val_high,  (threshold[0]+obj->ps_cali));
 				atomic_set(&obj->ps_thd_val_low,  (threshold[1]+obj->ps_cali));//need to confirm
 
+#ifdef CUSTOM_KERNEL_SENSORHUB
+                pCustData->setPSThreshold.action = CM36283_CUST_ACTION_SET_PS_THRESHODL;
+                pCustData->setPSThreshold.threshold[0] = threshold[0];
+                pCustData->setPSThreshold.threshold[1] = threshold[1];
+                len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData) + sizeof(pCustData->setPSThreshold);
+
+                err = SCP_sensorHub_req_send(&data, &len, 1);
+#else
 				set_psensor_threshold(obj->client);
+#endif
 				
 				break;
 				
@@ -1415,6 +1730,7 @@ static struct miscdevice cm36283_device = {
 };
 
 /*--------------------------------------------------------------------------------------*/
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 static void cm36283_early_suspend(struct early_suspend *h)
 {
 		struct cm36283_priv *obj = container_of(h, struct cm36283_priv, early_drv);	
@@ -1457,6 +1773,7 @@ static void cm36283_late_resume(struct early_suspend *h)
 			}
 		}
 }
+#endif
 /*--------------------------------------------------------------------------------*/
 static int cm36283_init_client(struct i2c_client *client)
 {
@@ -1547,13 +1864,15 @@ static int cm36283_init_client(struct i2c_client *client)
 		APS_ERR("setup eint: %d\n", res);
 		return res;
 	}
-	
+
+#ifndef CUSTOM_KERNEL_SENSORHUB
 	res = cm36283_disable_eint(client);
 	if(res!=0)
 	{
 		APS_ERR("disable eint fail: %d\n", res);
 		return res;
-	}	
+	}
+#endif//#ifndef CUSTOM_KERNEL_SENSORHUB
 	
 	return CM36283_SUCCESS;
 	
@@ -1562,182 +1881,160 @@ static int cm36283_init_client(struct i2c_client *client)
 	return res;
 }
 /*--------------------------------------------------------------------------------*/
-
-/*--------------------------------------------------------------------------------*/
-int cm36283_ps_operate(void* self, uint32_t command, void* buff_in, int size_in,
-		void* buff_out, int size_out, int* actualout)
+static int als_open_report_data(int open)
 {
-		int err = 0;
-		int value;
-		hwm_sensor_data* sensor_data;
-		struct cm36283_priv *obj = (struct cm36283_priv *)self;		
-		//APS_FUN(f);
-		switch (command)
-		{
-			case SENSOR_DELAY:
-				//APS_ERR("cm36283 ps delay command!\n");
-				if((buff_in == NULL) || (size_in < sizeof(int)))
-				{
-					APS_ERR("Set delay parameter error!\n");
-					err = -EINVAL;
-				}
-				break;
-	
-			case SENSOR_ENABLE:
-				//APS_ERR("cm36283 ps enable command!\n");
-				if((buff_in == NULL) || (size_in < sizeof(int)))
-				{
-					APS_ERR("Enable sensor parameter error!\n");
-					err = -EINVAL;
-				}
-				else
-				{				
-					value = *(int *)buff_in;
-					if(value)
-					{
-						if((err = cm36283_enable_ps(obj->client, 1)))
-						{
-							APS_ERR("enable ps fail: %d\n", err); 
-							return -1;
-						}
-						set_bit(CMC_BIT_PS, &obj->enable);
-					}
-					else
-					{
-						if((err = cm36283_enable_ps(obj->client, 0)))
-						{
-							APS_ERR("disable ps fail: %d\n", err); 
-							return -1;
-						}
-						clear_bit(CMC_BIT_PS, &obj->enable);
-					}
-				}
-				break;
-	
-			case SENSOR_GET_DATA:
-				//APS_ERR("cm36283 ps get data command!\n");
-				if((buff_out == NULL) || (size_out< sizeof(hwm_sensor_data)))
-				{
-					APS_ERR("get sensor data parameter error!\n");
-					err = -EINVAL;
-				}
-				else
-				{
-					sensor_data = (hwm_sensor_data *)buff_out;				
-					
-					if((err = cm36283_read_ps(obj->client, &obj->ps)))
-					{
-						err = -1;;
-					}
-					else
-					{
-						sensor_data->values[0] = cm36283_get_ps_value(obj, obj->ps);
-						sensor_data->value_divide = 1;
-						sensor_data->status = SENSOR_STATUS_ACCURACY_MEDIUM;
-					}				
-				}
-				break;
-			default:
-				APS_ERR("proxmy sensor operate function no this parameter %d!\n", command);
-				err = -1;
-				break;
-		}
-		
-		return err;
-
+	//should queuq work to report event if  is_report_input_direct=true
+	return 0;
 }
-
-int cm36283_als_operate(void* self, uint32_t command, void* buff_in, int size_in,
-		void* buff_out, int size_out, int* actualout)
+/*--------------------------------------------------------------------------------*/
+// if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL
+static int als_enable_nodata(int en)
 {
-		int err = 0;
-		int value;
-		hwm_sensor_data* sensor_data;
-		struct cm36283_priv *obj = (struct cm36283_priv *)self;
-		//APS_FUN(f);
-		switch (command)
+	int res = 0;
+	if(!cm36283_obj)
+	{
+		APS_ERR("cm36283_obj is null!!\n");
+		return -1;
+	}
+	APS_LOG("cm36283_obj als enable value = %d\n", en);
+
+    if(en)
+	{
+		if((res = cm36283_enable_als(cm36283_obj->client, 1)))
 		{
-			case SENSOR_DELAY:
-				//APS_ERR("cm36283 als delay command!\n");
-				if((buff_in == NULL) || (size_in < sizeof(int)))
-				{
-					APS_ERR("Set delay parameter error!\n");
-					err = -EINVAL;
-				}
-				break;
-	
-			case SENSOR_ENABLE:
-				//APS_ERR("cm36283 als enable command!\n");
-				if((buff_in == NULL) || (size_in < sizeof(int)))
-				{
-					APS_ERR("Enable sensor parameter error!\n");
-					err = -EINVAL;
-				}
-				else
-				{
-					value = *(int *)buff_in;				
-					if(value)
-					{
-						if((err = cm36283_enable_als(obj->client, 1)))
-						{
-							APS_ERR("enable als fail: %d\n", err); 
-							return -1;
-						}
-						set_bit(CMC_BIT_ALS, &obj->enable);
-					}
-					else
-					{
-						if((err = cm36283_enable_als(obj->client, 0)))
-						{
-							APS_ERR("disable als fail: %d\n", err); 
-							return -1;
-						}
-						clear_bit(CMC_BIT_ALS, &obj->enable);
-					}
-					
-				}
-				break;
-	
-			case SENSOR_GET_DATA:
-				//APS_ERR("cm36283 als get data command!\n");
-				if((buff_out == NULL) || (size_out< sizeof(hwm_sensor_data)))
-				{
-					APS_ERR("get sensor data parameter error!\n");
-					err = -EINVAL;
-				}
-				else
-				{
-					sensor_data = (hwm_sensor_data *)buff_out;
-									
-					if((err = cm36283_read_als(obj->client, &obj->als)))
-					{
-						err = -1;;
-					}
-					else
-					{
-						sensor_data->values[0] = cm36283_get_als_value(obj, obj->als);
-						sensor_data->value_divide = 1;
-						sensor_data->status = SENSOR_STATUS_ACCURACY_MEDIUM;
-					}				
-				}
-				break;
-			default:
-				APS_ERR("light sensor operate function no this parameter %d!\n", command);
-				err = -1;
-				break;
+			APS_ERR("enable als fail: %d\n", res); 
+			return -1;
 		}
-		
-		return err;
+		set_bit(CMC_BIT_ALS, &cm36283_obj->enable);
+	}
+	else
+	{
+		if((res = cm36283_enable_als(cm36283_obj->client, 0)))
+		{
+			APS_ERR("disable als fail: %d\n", res); 
+			return -1;
+		}
+		clear_bit(CMC_BIT_ALS, &cm36283_obj->enable);
+	}
+    
+	if(res){
+		APS_ERR("als_enable_nodata is failed!!\n");
+		return -1;
+	}
+	return 0;
+}
+/*--------------------------------------------------------------------------------*/
+static int als_set_delay(u64 ns)
+{
+	return 0;
+}
+/*--------------------------------------------------------------------------------*/
+static int als_get_data(int* value, int* status)
+{
+	int err = 0;
+
+	if(!cm36283_obj)
+	{
+		APS_ERR("cm36283_obj is null!!\n");
+		return -1;
+	}
+
+	if((err = cm36283_read_als(cm36283_obj->client, &cm36283_obj->als)))
+	{
+		err = -1;
+	}
+	else
+	{
+		*value = cm36283_get_als_value(cm36283_obj, cm36283_obj->als);
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+	}
+
+	return err;
+}
+/*--------------------------------------------------------------------------------*/
+// if use  this typ of enable , Gsensor should report inputEvent(x, y, z ,stats, div) to HAL
+static int ps_open_report_data(int open)
+{
+	//should queuq work to report event if  is_report_input_direct=true
+	return 0;
+}
+/*--------------------------------------------------------------------------------*/
+// if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL
+static int ps_enable_nodata(int en)
+{
+	int res = 0;
+	if(!cm36283_obj)
+	{
+		APS_ERR("cm36283_obj is null!!\n");
+		return -1;
+	}
+	APS_LOG("cm36283_obj als enable value = %d\n", en);
+
+    if(en)
+	{
+		if((res = cm36283_enable_ps(cm36283_obj->client, 1)))
+		{
+			APS_ERR("enable ps fail: %d\n", res); 
+			return -1;
+		}
+		set_bit(CMC_BIT_PS, &cm36283_obj->enable);
+	}
+	else
+	{
+		if((res = cm36283_enable_ps(cm36283_obj->client, 0)))
+		{
+			APS_ERR("disable ps fail: %d\n", res); 
+			return -1;
+		}
+		clear_bit(CMC_BIT_PS, &cm36283_obj->enable);
+	}
+    
+	if(res){
+		APS_ERR("als_enable_nodata is failed!!\n");
+		return -1;
+	}
+    
+	return 0;
 
 }
 /*--------------------------------------------------------------------------------*/
+static int ps_set_delay(u64 ns)
+{
+	return 0;
+}
+/*--------------------------------------------------------------------------------*/
+static int ps_get_data(int* value, int* status)
+{
+    int err = 0;
 
-
+    if(!cm36283_obj)
+	{
+		APS_ERR("cm36283_obj is null!!\n");
+		return -1;
+	}
+    
+    if((err = cm36283_read_ps(cm36283_obj->client, &cm36283_obj->ps)))
+    {
+        err = -1;
+    }
+    else
+    {
+        *value = cm36283_get_ps_value(cm36283_obj, cm36283_obj->ps);
+        *status = SENSOR_STATUS_ACCURACY_MEDIUM;
+    }
+    
+	return err;
+}
 /*-----------------------------------i2c operations----------------------------------*/
 static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct cm36283_priv *obj;
-	struct hwmsen_object obj_ps, obj_als;
+
+    struct als_control_path als_ctl={0};
+	struct als_data_path als_data={0};
+	struct ps_control_path ps_ctl={0};
+	struct ps_data_path ps_data={0};
+    
 	int err = 0;
 
 	if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
@@ -1752,6 +2049,7 @@ static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	obj->hw = get_cust_alsps_hw();//get custom file data struct
 	
 	INIT_WORK(&obj->eint_work, cm36283_eint_work);
+    INIT_WORK(&obj->init_done_work, cm36283_init_done_work);
 
 	obj->client = client;
 	i2c_set_clientdata(client, obj);
@@ -1803,38 +2101,74 @@ static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	APS_LOG("cm36283_device misc_register OK!\n");
 
 	/*------------------------cm36283 attribute file for debug--------------------------------------*/
-	if((err = cm36283_create_attr(&cm36283_alsps_driver.driver)))
+	if((err = cm36283_create_attr(&cm36283_init_info.platform_diver_addr->driver)))
 	{
 		APS_ERR("create attribute err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 	/*------------------------cm36283 attribute file for debug--------------------------------------*/
 
-	obj_ps.self = cm36283_obj;
-	obj_ps.polling = obj->hw->polling_mode_ps;	
-	obj_ps.sensor_operate = cm36283_ps_operate;
-	if((err = hwmsen_attach(ID_PROXIMITY, &obj_ps)))
+	als_ctl.open_report_data= als_open_report_data;
+	als_ctl.enable_nodata = als_enable_nodata;
+	als_ctl.set_delay  = als_set_delay;
+	als_ctl.is_report_input_direct = false;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	als_ctl.is_support_batch = true;
+#else
+    als_ctl.is_support_batch = false;
+#endif
+	
+	err = als_register_control_path(&als_ctl);
+	if(err)
 	{
-		APS_ERR("attach fail = %d\n", err);
-		goto exit_sensor_obj_attach_fail;
-	}
-		
-	obj_als.self = cm36283_obj;
-	obj_als.polling = obj->hw->polling_mode_als;;
-	obj_als.sensor_operate = cm36283_als_operate;
-	if((err = hwmsen_attach(ID_LIGHT, &obj_als)))
-	{
-		APS_ERR("attach fail = %d\n", err);
+		APS_ERR("register fail = %d\n", err);
 		goto exit_sensor_obj_attach_fail;
 	}
 
-	#if defined(CONFIG_HAS_EARLYSUSPEND)
+	als_data.get_data = als_get_data;
+	als_data.vender_div = 100;
+	err = als_register_data_path(&als_data);	
+	if(err)
+	{
+		APS_ERR("tregister fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	
+	ps_ctl.open_report_data= ps_open_report_data;
+	ps_ctl.enable_nodata = ps_enable_nodata;
+	ps_ctl.set_delay  = ps_set_delay;
+	ps_ctl.is_report_input_direct = false;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	ps_ctl.is_support_batch = true;
+#else
+    ps_ctl.is_support_batch = false;
+#endif
+	
+	err = ps_register_control_path(&ps_ctl);
+	if(err)
+	{
+		APS_ERR("register fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	ps_data.get_data = ps_get_data;
+	ps_data.vender_div = 100;
+	err = ps_register_data_path(&ps_data);	
+	if(err)
+	{
+		APS_ERR("tregister fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	#if 0//defined(CONFIG_HAS_EARLYSUSPEND)
 	obj->early_drv.level    = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 2,
 	obj->early_drv.suspend  = cm36283_early_suspend,
 	obj->early_drv.resume   = cm36283_late_resume,    
 	register_early_suspend(&obj->early_drv);
 	#endif
 
+    cm36283_init_flag = 0;
 	APS_LOG("%s: OK\n", __func__);
 	return 0;
 
@@ -1847,6 +2181,7 @@ static int cm36283_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	exit:
 	cm36283_i2c_client = NULL;           
 	APS_ERR("%s: err = %d\n", __func__, err);
+    cm36283_init_flag = -1;
 	return err;
 }
 
@@ -1854,7 +2189,7 @@ static int cm36283_i2c_remove(struct i2c_client *client)
 {
 	int err;	
 	/*------------------------cm36283 attribute file for debug--------------------------------------*/	
-	if((err = cm36283_delete_attr(&cm36283_i2c_driver.driver)))
+	if((err = cm36283_delete_attr(&cm36283_init_info.platform_diver_addr->driver)))
 	{
 		APS_ERR("cm36283_delete_attr fail: %d\n", err);
 	} 
@@ -1892,23 +2227,26 @@ static int cm36283_i2c_resume(struct i2c_client *client)
 }
 
 /*----------------------------------------------------------------------------*/
-
-static int cm36283_probe(struct platform_device *pdev) 
+static int  cm36283_local_init(void)
 {
-	//APS_FUN();  
-	struct alsps_hw *hw = get_cust_alsps_hw();
+    struct alsps_hw *hw = get_cust_alsps_hw();
+	//printk("fwq loccal init+++\n");
 
-	cm36283_power(hw, 1); //*****************   
-	
+	cm36283_power(hw, 1);
 	if(i2c_add_driver(&cm36283_i2c_driver))
 	{
 		APS_ERR("add driver error\n");
 		return -1;
-	} 
+	}
+	if(-1 == cm36283_init_flag)
+	{
+	   return -1;
+	}
+	//printk("fwq loccal init---\n");
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
-static int cm36283_remove(struct platform_device *pdev)
+static int cm36283_remove()
 {
 	//APS_FUN(); 
 	struct alsps_hw *hw = get_cust_alsps_hw();
@@ -1918,41 +2256,6 @@ static int cm36283_remove(struct platform_device *pdev)
 	i2c_del_driver(&cm36283_i2c_driver);
 	return 0;
 }
-
-
-
-/*----------------------------------------------------------------------------*/
-#if 0
-static struct platform_driver cm36283_alsps_driver = {
-	.probe      = cm36283_probe,
-	.remove     = cm36283_remove,    
-	.driver     = {
-		.name  = "als_ps",
-	}
-};
-#endif
-
-#ifdef CONFIG_OF
-static const struct of_device_id alsps_of_match[] = {
-	{ .compatible = "mediatek,als_ps", },
-	{},
-};
-#endif
-
-static struct platform_driver cm36283_alsps_driver =
-{
-	.probe      = cm36283_probe,
-	.remove     = cm36283_remove,    
-	.driver     = 
-	{
-		.name = "als_ps",
-        #ifdef CONFIG_OF
-		.of_match_table = alsps_of_match,
-		#endif
-	}
-};
-
-
 /*----------------------------------------------------------------------------*/
 static int __init cm36283_init(void)
 {
@@ -1960,18 +2263,13 @@ static int __init cm36283_init(void)
 	struct alsps_hw *hw = get_cust_alsps_hw();
 	APS_LOG("%s: i2c_number=%d, i2c_addr: 0x%x\n", __func__, hw->i2c_num, hw->i2c_addr[0]);
 	i2c_register_board_info(hw->i2c_num, &i2c_cm36283, 1);
-	if(platform_driver_register(&cm36283_alsps_driver))
-	{
-		APS_ERR("failed to register driver");
-		return -ENODEV;
-	}
+	alsps_driver_add(&cm36283_init_info);
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
 static void __exit cm36283_exit(void)
 {
 	APS_FUN();
-	platform_driver_unregister(&cm36283_alsps_driver);
 }
 /*----------------------------------------------------------------------------*/
 module_init(cm36283_init);
@@ -1980,4 +2278,3 @@ module_exit(cm36283_exit);
 MODULE_AUTHOR("yucong xiong");
 MODULE_DESCRIPTION("cm36283 driver");
 MODULE_LICENSE("GPL");
-
