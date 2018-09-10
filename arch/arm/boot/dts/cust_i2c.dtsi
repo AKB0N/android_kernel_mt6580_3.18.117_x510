@@ -9,21 +9,25 @@
 *************************/
 
 &i2c0 {
-	CAMERA_MAIN@36 {
+	CAMERA_MAIN@10 {
 		compatible = "mediatek,CAMERA_MAIN";
-		reg = <0x36>;
-	};
-
-	CAMERA_MAIN_AF@0C {
-		compatible = "mediatek,CAMERA_MAIN_AF";
-		reg = <0x0C>;
-	};
-
-	CAMERA_SUB@10 {
-		compatible = "mediatek,CAMERA_SUB";
 		reg = <0x10>;
 	};
 
+	CAMERA_MAIN_AF@18 {
+		compatible = "mediatek,CAMERA_MAIN_AF";
+		reg = <0x18>;
+	};
+
+	CAMERA_SUB@36 {
+		compatible = "mediatek,CAMERA_SUB";
+		reg = <0x36>;
+	};
+
+	CAMERA_SUB_AF@7F {
+		compatible = "mediatek,CAMERA_SUB_AF";
+		reg = <0x7F>;
+	};
 };
 
 &i2c1 {
@@ -32,32 +36,21 @@
 		reg = <0x5D>;
 	};
 
-	EXT_BUCK@60 {
-		compatible = "mediatek,EXT_BUCK";
+	I2C_LCD_BIAS@60 {
+		compatible = "mediatek,I2C_LCD_BIAS";
 		reg = <0x60>;
 	};
 
+	EXT_BUCK@6A {
+		compatible = "mediatek,EXT_BUCK";
+		reg = <0x6A>;
+	};
 };
 
 &i2c2 {
-	STROBE_MAIN@63 {
-		compatible = "mediatek,STROBE_MAIN";
-		reg = <0x63>;
-	};
-
-	MSENSOR@0D {
-		compatible = "mediatek,MSENSOR";
-		reg = <0x0D>;
-	};
-
 	GSENSOR@18 {
 		compatible = "mediatek,GSENSOR";
 		reg = <0x18>;
-	};
-
-	GYRO@68 {
-		compatible = "mediatek,GYRO";
-		reg = <0x68>;
 	};
 
 	ALSPS@60 {
@@ -65,5 +58,9 @@
 		reg = <0x60>;
 	};
 
+	STROBE_MAIN@63 {
+		compatible = "mediatek,STROBE_MAIN";
+		reg = <0x63>;
+	};
 };
 
