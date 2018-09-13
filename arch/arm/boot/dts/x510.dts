@@ -70,14 +70,14 @@
 	led@6 {
 		compatible = "mediatek,lcd-backlight";
 		led_mode = <5>;
-		data = <1>;
-		pwm_config = <1 1 0 0 0>;
+		data = <0>;
+		pwm_config = <0 0 0 0 0>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
-		vib_timer = <19>;
+		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <6>;
+		vib_vol= <5>;
 	};
 };
 
@@ -94,7 +94,7 @@
 	};
 
 	alsps@60 {
-		compatible 	= "mediatek,cm36283";
+		compatible 	= "mediatek,CM36283";
 		pinctrl-names = "pin_default", "pin_cfg";
 		pinctrl-0 = <&alsps_intpin_default>;
 		pinctrl-1 = <&alsps_intpin_cfg>;
