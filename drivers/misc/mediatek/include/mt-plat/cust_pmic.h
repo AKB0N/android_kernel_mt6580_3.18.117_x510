@@ -49,7 +49,8 @@
 #endif
 
 #if defined(MTK_FAN5402_SUPPORT) \
-	 || defined(MTK_FAN5405_SUPPORT) \
+	|| defined(MTK_FAN5405_SUPPORT) \
+	 || defined(MTK_BQ24158_SUPPORT) \
 	  || defined(MTK_BQ24158_SUPPORT) \
 	   || defined(MTK_BQ24196_SUPPORT) \
 	    || defined(MTK_BQ24296_SUPPORT) \

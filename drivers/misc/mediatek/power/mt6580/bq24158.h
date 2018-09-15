@@ -16,11 +16,32 @@
 * -------
 *
 ****************************************************************************/
-#include <linux/types.h>
-#include <mt-plat/upmu_common.h>
+
 #ifndef _bq24158_SW_H_
 #define _bq24158_SW_H_
+#include <mt-plat/mt_typedefs.h>
 
+#include <linux/kernel.h>
+#include <linux/mm.h>
+#include <linux/mm_types.h>
+#include <linux/module.h>
+#include <linux/types.h>
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
+#include <linux/gpio.h>
+#include <linux/device.h>
+
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/of_device.h>
+#include <linux/regulator/consumer.h>
+#include <linux/clk.h>
+#include <linux/pinctrl/consumer.h>
+#include <linux/of_gpio.h>
+#endif
+//#define HIGH_BATTERY_VOLTAGE_SUPPORT
 
 extern unsigned int charger_enable_pin;
 

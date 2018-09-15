@@ -1,4 +1,3 @@
-
 /*
  * Author: yucong xiong <yucong.xion@mediatek.com>
  *
@@ -1758,12 +1757,6 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit_sensor_obj_attach_fail;
 	}
 
-#ifdef CUSTOM_KERNEL_SENSORHUB
-	ps_ctl.is_support_batch = obj->hw.is_batch_supported_ps;
-#else
-    ps_ctl.is_support_batch = false;
-#endif
-
 	cm36686_init_flag = 0;
 	APS_LOG("%s: OK\n", __func__);
 	return 0;
@@ -1879,8 +1872,13 @@ static int cm36686_local_init(void)
 /*----------------------------------------------------------------------------*/
 static int __init cm36686_init(void)
 {
-	APS_FUN();
+	const char *name = "mediatek,CM36283";
 
+	hw = get_alsps_dts_func(name, hw);
+	if (!hw) {
+		APS_ERR("get_alsps_dts_func fail\n");
+		return 0;
+	}
 	alsps_driver_add(&cm36686_init_info);
 	return 0;
 }

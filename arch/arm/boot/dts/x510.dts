@@ -93,7 +93,7 @@
 		is_batch_supported = <0>;
 	};
 
-	alsps@60 {
+	cust_alsps@60 {
 		compatible 	= "mediatek,CM36283";
 		pinctrl-names = "pin_default", "pin_cfg";
 		pinctrl-0 = <&alsps_intpin_default>;
@@ -109,7 +109,7 @@
 		als_level = <0 1 7 15 50 100 500 1000 2000 3000 6000 10000 14000 18000 20000>;
 		als_value = <0 1 40 90 160 225 320 640 1280 2000 3000 4000 6000 8000 10240 20000>;
 		ps_threshold_high =  <20>;
-		ps_threshold_low =  <21>;
+		ps_threshold_low =  <14>;
 		is_batch_supported_ps = <0>;
 		is_batch_supported_als = <0>;
 	};

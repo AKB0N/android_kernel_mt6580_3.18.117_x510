@@ -3550,7 +3550,7 @@ void check_battery_exist(void)
 				    g_platform_boot_mode);
 		} else {
 			battery_log(BAT_LOG_CRTI,
-				    "[BATTERY] Battery is not exist, power off FAN5405 and system (%d)\n",
+				    "[BATTERY] Battery is not exist, power off BQ24158 and system (%d)\n",
 				    baton_count);
 
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);

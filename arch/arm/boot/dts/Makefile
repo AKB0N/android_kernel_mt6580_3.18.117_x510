@@ -1,5 +1,5 @@
 ifeq ($(CONFIG_OF),y)
-
+obj-y := pmic_drv.o
 # Keep at91 dtb files sorted alphabetically for each SoC
 # rm9200
 dtb-$(CONFIG_ARCH_AT91) += at91rm9200ek.dtb
