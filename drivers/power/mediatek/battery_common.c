@@ -553,7 +553,6 @@ int init_proc_log(void)
 	battery_log(BAT_LOG_CRTI, "proc_create bat_proc_fops\n");
 #else
 	proc_entry = create_proc_entry("batdrv_log", 0644, NULL);
-
 	if (proc_entry == NULL) {
 		ret = -ENOMEM;
 		battery_log(BAT_LOG_FULL, "init_proc_log: Couldn't create proc entry\n");
