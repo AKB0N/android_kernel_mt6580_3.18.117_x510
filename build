@@ -25,8 +25,8 @@ source ~/.yuvraj.conf
 
 # Common Declarations
 
-declare -a BUILDER_NAME="Yuvraj Saxena"
-declare -a BUILDER_NICKNAME="rad0n"
+declare -a BUILDER_NAME="Ibrahim Fathelbab"
+declare -a BUILDER_NICKNAME="ibrahim1973"
 declare -a COMPILED_KERNEL="out/arch/arm/boot/zImage-dtb"
 declare -a BUILDER_TG_NAME="akbon19"
 declare -a TESTER_TG_NAME="Pharaohs-Team"
@@ -44,18 +44,18 @@ if [[ ${BUILDING_ON_CI} = 'y' ]]; then
 	case "${1}" in
                 "-b"|"--build")
                         BUILD_KERNEL=y
-clear
+
                         ;;
 		"-c"|"--clean")
 			CLEAN_KERNEL=y
-clear
+
 			;;
                 "-h"|"--help")
                         HELP=y
-clear
+
                         ;;
 		*)
-clear
+
                         printf '\n'
 			echo "${RED}Opps:Invalid Option${RST}"
                         exit;
@@ -69,18 +69,18 @@ else
 	case "${O}" in
                 "b"|"build")
                         BUILD_KERNEL=y
-clear
+
                         ;;
 		"c"|"clean")
 			CLEAN_KERNEL=y
-clear
+
 			;;
                 "h"|"help")
                         HELP=y
-clear
+
                         ;;
 		*)
-clear
+
 			printf '\n'
 			echo "${RED}Opps:Invalid Option${RST}"
                         exit;
@@ -91,23 +91,31 @@ fi
 }
 
 function BANNER() {
-clear
+
         INFO
         echo "${BLINK_RED}
-▓██   ██▓ █    ██  ██▒   █▓ ██▀███   ▄▄▄      ▄▄▄██▀▀▀
- ▒██  ██▒ ██  ▓██▒▓██░   █▒▓██ ▒ ██▒▒████▄      ▒██   
-  ▒██ ██░▓██  ▒██░ ▓██  █▒░▓██ ░▄█ ▒▒██  ▀█▄    ░██   
-  ░ ▐██▓░▓▓█  ░██░  ▒██ █░░▒██▀▀█▄  ░██▄▄▄▄██▓██▄██▓  
-  ░ ██▒▓░▒▒█████▓    ▒▀█░  ░██▓ ▒██▒ ▓█   ▓██▒▓███▒   
-   ██▒▒▒ ░▒▓▒ ▒ ▒    ░ ▐░  ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░▒▓▒▒░   
- ▓██ ░▒░ ░░▒░ ░ ░    ░ ░░    ░▒ ░ ▒░  ▒   ▒▒ ░▒ ░▒░   
- ▒ ▒ ░░   ░░░ ░ ░      ░░    ░░   ░   ░   ▒   ░ ░ ░   
- ░ ░        ░           ░     ░           ░  ░░   ░   
- ░ ░                   ░                              
+  *       
+   ░▒▒▓███████    ░░░░░▒▒▒▓▓████████████████  
+ *██          █   ░░░░░▒▒▒▓▓████████████████
+  ██  *     * █   ░░░░░▒▒▒▓▓████████████████  
+ *██     *    █ *            ░▒▓█     *        
+  ██   *      █     *  *     ░▒▓█ *     *  *   
+  ██        * █  *  *   *    ░▒▓█   * *        
+ *██ ░▒▓██████ /\     *      ░▒▓█     * *  *   
+  ██          /\/\   *  *    ░▒▓█   *          
+  ██   *     /\/\/\     *    ░▒▓█  *   *   *   
+ *██      * /\/\/\/\  *      ░▒▓█     *        
+ *██    *  /\/\/\/__\   *    ░▒▓█    *   *     
+  ▓▓    * /\/\/\/____\       ░▒▓█      *       
+  ▒▒  *  /\/\/\/______\      ░▒▓█  *   * *     
+  ▒▒    /\/\/\/________\     ░▒▓█              
+  ░░   /\/\/\/__________\    ░▒▓█              
+  ░░  /\/\/\/____________\   ░▒▓█              
+  ░░ /\/\/\/Pharaohs__Team\  ░▒▓█                        
 ${RST}
 "
 sleep 2
-clear
+
 }
 
 function INFO() {
@@ -121,11 +129,11 @@ then
         echo "${CYN}#       TOOLCHAIN NOT FOUND!       #"
         echo "${YLW}####################################"
 	sleep 0.7
-clear
+
         echo "${YLW}####################################"
         echo "${GRN}#       CLONING TOOLCHAIN          #"
         echo "####################################"
-        git clone -q https://github.com/rad0n/linaro-7.git linaro
+        git clone -q https://github.com/ibrahim1973/linaro-7.git linaro
         export ARCH=arm CROSS_COMPILE=$PWD/linaro/bin/arm-linux-gnueabihf-
 else
         export ARCH=arm CROSS_COMPILE=$PWD/linaro/bin/arm-linux-gnueabihf-
@@ -133,7 +141,7 @@ fi
 }
 
 function BUILD() {
-clear
+
 	export KBUILD_BUILD_USER=Ibrahim
         export KBUILD_BUILD_HOST=∆Pharaohs-Team
         export KERNEL_NAME=horus
@@ -141,14 +149,14 @@ clear
         rm *log
         echo "${PURP} READING DEFCONFIG..."
         make x510_defconfig O=out/ &>> defconfig.log
-clear
+
         echo "${YLW} BUILDING KERNEL..."
         make -j6 O=out/ &>> Kernel.log
 	COMPILED_DATE=$(date +"%Y-%m-%d-%H:%M:%S")
 }
 
 function CHECK() {
-clear
+
 if [[ ! -e ${COMPILED_KERNEL} ]];
 then
         echo "${RED}############################"
@@ -156,7 +164,7 @@ then
         echo "${RED}############################"
         echo "${CYN}#       Uploading Logs     #"
         echo "${RED}############################"
-clear
+
 if [[ ${BUILDING_ON_CI} = 'y' ]]; then
         TRANSFER Kernel.log
 else
@@ -166,14 +174,14 @@ else
         echo "${GRN} #####################################"
         echo "${GRN} #                                   #"
         echo "${GRN} #  SUCCESSFULLY BUILDED KERNEL      #"
-        echo "${GRN} #        -BY IMYUVRAJ               #"
+        echo "${GRN} #        -BY Ibrahim1973            #"
         echo "${GRN} #                                   #"
         echo "${GRN} #####################################"
         echo "${ORNG} #  uploading Kernel                #"
         echo "${ORNG} #####################################"
         cp ${COMPILED_KERNEL} Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}
 	zip -r Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}.zip Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}
-clear
+
 if [[ ${BUILDING_ON_CI} = 'y' ]]; then
         TRANSFER Kernel_${COMPILED_DATE}-${KERNEL_NAME}-${DEVICE_NAME}.zip
 else
@@ -184,11 +192,11 @@ fi
 }
 
 function CLEAN() {
-clear
+
         echo "${GRN}#        Cleaning Tree!      ${RST}"
         make clean >/dev/null
         make mrproper >/dev/null
-clear
+
 }
 
 function HELP() {
