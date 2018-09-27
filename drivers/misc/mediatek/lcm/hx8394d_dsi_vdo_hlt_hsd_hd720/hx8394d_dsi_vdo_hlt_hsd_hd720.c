@@ -29,9 +29,6 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 extern atomic_t ESDCheck_byCPU;
 #endif
 
-unsigned int GPIO_LCD_BIAS_ENP_PIN;
-unsigned int GPIO_LCD_BIAS_ENN_PIN;
-
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 
 #define UDELAY(n) (lcm_util.udelay(n))
@@ -123,15 +120,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 
 static void lcm_init(void)
-{
-	unsigned int  data_array[32];
-	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
-    mt_set_gpio_out(GPIO_LCD_BIAS_ENN_PIN, GPIO_OUT_ONE);  
-    SET_RESET_PIN(1);
-    SET_RESET_PIN(0);
-    MDELAY(10);
-    SET_RESET_PIN(1);
-    MDELAY(20);
+{ 
+	unsigned int data_array[32];
 			
 		data_array[0] = 0x00043902;
 		data_array[1] = 0x9483FFB9;
@@ -139,7 +129,7 @@ static void lcm_init(void)
 		MDELAY(10);
 		 
 		data_array[0] = 0x00033902; 						
-		data_array[1] = 0x008372BA;
+		data_array[1] = 0x008373BA;
 		//data_array[2] = 0x0909b265;
 		//data_array[3] = 0x00001040;
 		dsi_set_cmdq(data_array, 2, 1);
@@ -283,47 +273,13 @@ static void lcm_suspend(void)
 	MDELAY(50);
 	
 	SET_RESET_PIN(1);
-	MDELAY(20); 
-	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ZERO);
-    mt_set_gpio_out(GPIO_LCD_BIAS_ENN_PIN, GPIO_OUT_ZERO);  
+	MDELAY(20);
 }
 
 
 static void lcm_resume(void)
 {
     lcm_init();
-}
-
-
-static void lcm_update(unsigned int x, unsigned int y,
-                       unsigned int width, unsigned int height)
-{
-	unsigned int x0 = x;
-	unsigned int y0 = y;
-	unsigned int x1 = x0 + width - 1;
-	unsigned int y1 = y0 + height - 1;
-
-	unsigned char x0_MSB = ((x0>>8)&0xFF);
-	unsigned char x0_LSB = (x0&0xFF);
-	unsigned char x1_MSB = ((x1>>8)&0xFF);
-	unsigned char x1_LSB = (x1&0xFF);
-	unsigned char y0_MSB = ((y0>>8)&0xFF);
-	unsigned char y0_LSB = (y0&0xFF);
-	unsigned char y1_MSB = ((y1>>8)&0xFF);
-	unsigned char y1_LSB = (y1&0xFF);
-
-	unsigned int data_array[16];
-
-	data_array[0]= 0x00053902;
-	data_array[1]= (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0x2a;
-	data_array[2]= (x1_LSB);
-	data_array[3]= 0x00053902;
-	data_array[4]= (y1_MSB<<24)|(y0_LSB<<16)|(y0_MSB<<8)|0x2b;
-	data_array[5]= (y1_LSB);
-	data_array[6]= 0x002c3909;
-
-	dsi_set_cmdq(data_array, 7, 0);
-
 }
 
 static unsigned int lcm_compare_id(void)
@@ -371,8 +327,6 @@ static unsigned int lcm_compare_id(void)
 static unsigned int rgk_lcm_compare_id(void)
 {
     int data[4] = {0,0,0,0};
-    int res = 0;
-    int rawdata = 0;
     int lcm_vol = 0;
 
 #ifdef AUXADC_LCM_VOLTAGE_CHANNEL
