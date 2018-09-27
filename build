@@ -148,7 +148,7 @@ function BUILD() {
         mkdir -p out
         rm *log
         echo "${PURP} READING DEFCONFIG..."
-        make k80_bsp_defconfig O=out/ &>> defconfig.log
+        make x510_defconfig O=out/ &>> defconfig.log
 
         echo "${YLW} BUILDING KERNEL..."
         make -j6 O=out/ &>> Kernel.log
