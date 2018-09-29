@@ -20,7 +20,7 @@
 	atag,videolfb-islcmfound = <1>;
 	atag,videolfb-fps= <6000>;
 	atag,videolfb-vramSize= <0x01800000>;
-	atag,videolfb-lcmname= "nt35521_dsi_vdo_yushun_cmi_hd720";
+	atag,videolfb-lcmname= "hx8394d_dsi_vdo_hlt_hsd_hd720";
 };
 
 &bus {
@@ -94,7 +94,7 @@
 	};
 
 	alsps@60 {
-		compatible 	= "mediatek,CM36283";
+		compatible 	= "mediatek,cm36283";
 		pinctrl-names = "pin_default", "pin_cfg";
 		pinctrl-0 = <&alsps_intpin_default>;
 		pinctrl-1 = <&alsps_intpin_cfg>;
@@ -334,11 +334,11 @@
 	status = "okay";
 };
 &pio {
-	ACCDET_pins_default: eint3default {
+	ACCDET_pins_default: eint0default {
 	};
-	ACCDET_pins_eint_as_int: eint@3 {
+	ACCDET_pins_eint_as_int: eint@0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO3__FUNC_EINT3>;
+			pins = <PINMUX_GPIO0__FUNC_EINT0>;
 			slew-rate = <0>;
 			bias-disable;
 		};
@@ -349,7 +349,7 @@
 &touch {
 	tpd-resolution = <720 1280>;
 	use-tpd-button = <0>;
-	tpd-key-num = <3>;
+	tpd-key-num = <0>;
 	tpd-key-local= <139 172 158 0>;
 	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
@@ -457,7 +457,7 @@
 	AUD_pins_extamp_high:extampouthigh {
 
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO15__FUNC_GPIO15>;
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -465,7 +465,7 @@
 	AUD_pins_extamp_low:extampoutlow {
 
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO15__FUNC_GPIO15>;
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
 			slew-rate = <1>;
 			output-low;
 		};

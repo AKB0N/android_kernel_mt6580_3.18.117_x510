@@ -15,7 +15,7 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 | Lens #1 | `DW9714AF ` | Yes | Yes |
 | Lens #2 | `FM50AF (i2c 0-000c)` | Yes | No |
 | RAM | `2GB & 1GB  LPDDR3_1066` | - | Yes |
-| Sound | `mtsndcard` | - | No |
+| Sound | `mtsndcard` | - | Yes |
 | Accdet | `mt6580-accdet` | - | Yes |
 | Other | `kd_camera_hw (i2c 0-0010)` | - | Yes |
 | Other | `kd_camera_hw_bus2 (i2c 0-0036)` | - | Yes |
@@ -23,12 +23,10 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 
 Bugs :
 
-Sound speaker
-Wifi
-Bluetooth
 Alsps
 Front camera
-Rotate back camera
+Upside Down back camera
+
 
 ## Acknowledgements
 

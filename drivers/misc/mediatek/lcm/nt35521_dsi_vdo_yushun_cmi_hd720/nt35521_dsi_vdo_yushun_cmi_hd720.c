@@ -373,18 +373,6 @@ static unsigned int rgk_lcm_compare_id(void)
     int data[4] = {0,0,0,0};
     int lcm_vol = 0;
 
-#ifdef AUXADC_LCM_VOLTAGE_CHANNEL
-    res = IMM_GetOneChannelValue(AUXADC_LCM_VOLTAGE_CHANNEL,data,&rawdata);
-    if(res < 0)
-    { 
-	#ifdef BUILD_LK
-	printf("[adc_uboot]: get data error\n");
-	#endif
-	return 0;
-		   
-    }
-#endif
-
     lcm_vol = data[0]*1000+data[1]*10;
 
 #ifdef BUILD_LK
