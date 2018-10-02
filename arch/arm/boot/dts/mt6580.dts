@@ -787,6 +787,12 @@
 			compatible = "mediatek,mt6580-accdet";
 		};
 
+		bq24158:bq24158@6a {
+                status = "okay";
+                compatible = "bq24158";
+                reg = <0x6a>;
+            };
+
 		gse_1: gse_1 {
 			compatible = "mediatek, gse_1-eint";
 			status = "disabled";

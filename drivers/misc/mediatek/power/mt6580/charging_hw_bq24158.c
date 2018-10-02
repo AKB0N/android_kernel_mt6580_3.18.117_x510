@@ -27,59 +27,20 @@
  * Upper this line, this part is controlled by PVCS VM. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
+#include <linux/types.h>
 #include <mt-plat/charging.h>
-#include "bq24158.h"
 #include <mt-plat/upmu_common.h>
-//#include <mt-plat/mt_gpio.h>
-//#include <cust_gpio_usage.h>
-//#include <mt-plat/upmu_hw.h>
-//#include <linux/xlog.h>
+#include <mt-plat/mt_reboot.h>
 #include <linux/delay.h>
-#include <linux/init.h>
-#include <linux/module.h>
 #include <linux/reboot.h>
-//#include <mt-plat/mt_sleep.h>
-#include <mt-plat/mt_boot.h>
-//#include <mt-plat/system.h>
-#include <cust_charging.h>
-
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <linux/mm_types.h>
-#include <linux/module.h>
-#include <linux/types.h>
-#include <linux/slab.h>
-#include <linux/vmalloc.h>
-#include <linux/gpio.h>
-#include <linux/device.h>
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#include <linux/of_device.h>
-#include <linux/regulator/consumer.h>
-#include <linux/clk.h>
-#include <linux/pinctrl/consumer.h>
-#include <linux/of_gpio.h>
-#endif
-
-
-/*#include "bq24158.h"
-#include <linux/delay.h>
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/reboot.h>
-#include <linux/types.h>
-#include <mt-plat/charging.h>
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/mt_gpio.h>
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-#include <mt-plat/upmu_common.h>*/
+#include <mt-plat/battery_common.h>
+#include <mach/mt_charging.h>
+#include <mach/mt_pmic.h>
+#include <mach/gpio_const.h>
+#include "bq24158.h"
+
 
  // ============================================================ //
  //define
@@ -92,30 +53,29 @@
  // ============================================================ //
  //global variable
  // ============================================================ //
-static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
+//static CHARGER_TYPE g_charger_type = CHARGER_UNKNOWN;
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 #define WIRELESS_CHARGER_EXIST_STATE 0
 int wireless_charger_gpio_number   = (168 | 0x80000000); 
 #endif
-/*
-#if 1
-#include <cust_gpio_usage.h>
+
+#if 0
+#define GPIO_SWCHARGER_EN_PIN         (GPIO5 | 0x80000000)
+#define GPIO_SWCHARGER_EN_PIN_M_GPIO   GPIO_MODE_00
+
+
 int gpio_number   = GPIO_SWCHARGER_EN_PIN; 
 int gpio_off_mode = GPIO_SWCHARGER_EN_PIN_M_GPIO;
 int gpio_on_mode  = GPIO_SWCHARGER_EN_PIN_M_GPIO;
-#else
-int gpio_number   = (19 | 0x80000000); 
-int gpio_off_mode = 0;
-int gpio_on_mode  = 0;
-#endif
 int gpio_off_dir  = GPIO_DIR_OUT;
 int gpio_off_out  = GPIO_OUT_ONE;
 int gpio_on_dir   = GPIO_DIR_OUT;
 int gpio_on_out   = GPIO_OUT_ZERO;
-*/
+#endif
+
 kal_bool charging_type_det_done = KAL_TRUE;
 
-const u32 VBAT_CV_VTH[]=
+const unsigned int VBAT_CV_VTH[]=
 {
 	BATTERY_VOLT_03_500000_V,   BATTERY_VOLT_03_520000_V,	BATTERY_VOLT_03_540000_V,   BATTERY_VOLT_03_560000_V,
 	BATTERY_VOLT_03_580000_V,   BATTERY_VOLT_03_600000_V,	BATTERY_VOLT_03_620000_V,   BATTERY_VOLT_03_640000_V,
@@ -132,18 +92,18 @@ const u32 VBAT_CV_VTH[]=
 	
 };
 
-const u32 CS_VTH[]=
+const unsigned int CS_VTH[]=
 {
 	CHARGE_CURRENT_550_00_MA,   CHARGE_CURRENT_650_00_MA,	CHARGE_CURRENT_750_00_MA, CHARGE_CURRENT_850_00_MA,
 	CHARGE_CURRENT_950_00_MA,   CHARGE_CURRENT_1050_00_MA,	CHARGE_CURRENT_1150_00_MA, CHARGE_CURRENT_1250_00_MA
 }; 
 
- const u32 INPUT_CS_VTH[]=
+ const unsigned int INPUT_CS_VTH[]=
  {
 	 CHARGE_CURRENT_100_00_MA,	 CHARGE_CURRENT_500_00_MA,	 CHARGE_CURRENT_800_00_MA, CHARGE_CURRENT_MAX
  }; 
 
- const u32 VCDT_HV_VTH[]=
+ const unsigned int VCDT_HV_VTH[]=
  {
 	  BATTERY_VOLT_04_200000_V, BATTERY_VOLT_04_250000_V,	  BATTERY_VOLT_04_300000_V,   BATTERY_VOLT_04_350000_V,
 	  BATTERY_VOLT_04_400000_V, BATTERY_VOLT_04_450000_V,	  BATTERY_VOLT_04_500000_V,   BATTERY_VOLT_04_550000_V,
@@ -151,13 +111,13 @@ const u32 CS_VTH[]=
 	  BATTERY_VOLT_07_500000_V, BATTERY_VOLT_08_500000_V,	  BATTERY_VOLT_09_500000_V,   BATTERY_VOLT_10_500000_V		  
  };
 
-static u32 charging_error = false;
+static unsigned int charging_error = false;
  // ============================================================ //
  // function prototype
  // ============================================================ //
 
-static u32 charging_get_error_state(void);
-static u32 charging_set_error_state(void *data);
+static unsigned int charging_get_error_state(void);
+static unsigned int charging_set_error_state(void *data);
  
  // ============================================================ //
  //extern variable
@@ -166,16 +126,16 @@ static u32 charging_set_error_state(void *data);
  // ============================================================ //
  //extern function
  // ============================================================ //
- //extern u32 upmu_get_reg_value(u32 reg);
  extern bool mt_usb_is_device(void);
  extern void Charger_Detect_Init(void);
  extern void Charger_Detect_Release(void);
+ extern int hw_charging_get_charger_type(void);
  extern void mt_power_off(void);
  
  extern bool get_usb_current_unlimited(void);
  
  // ============================================================ //
- u32 charging_value_to_parameter(const u32 *parameter, const u32 array_size, const u32 val)
+ unsigned int charging_value_to_parameter(const unsigned int *parameter, const unsigned int array_size, const unsigned int val)
 {
 	if (val < array_size)
 	{
@@ -189,9 +149,9 @@ static u32 charging_set_error_state(void *data);
 }
 
  
- u32 charging_parameter_to_value(const u32 *parameter, const u32 array_size, const u32 val)
+ unsigned int charging_parameter_to_value(const unsigned int *parameter, const unsigned int array_size, const unsigned int val)
 {
-	u32 i;
+	unsigned int i;
 
 	for(i=0;i<array_size;i++)
 	{
@@ -207,10 +167,10 @@ static u32 charging_set_error_state(void *data);
 }
 
 
- static u32 bmt_find_closest_level(const u32 *pList,u32 number,u32 level)
+ static unsigned int bmt_find_closest_level(const unsigned int *pList,unsigned int number,unsigned int level)
  {
-	 u32 i;
-	 u32 max_value_in_last_element;
+	 unsigned int i;
+	 unsigned int max_value_in_last_element;
  
 	 if(pList[0] < pList[1])
 		 max_value_in_last_element = KAL_TRUE;
@@ -247,389 +207,52 @@ static u32 charging_set_error_state(void *data);
 	 }
  }
 
-
+#if 0
 static void hw_bc11_dump_register(void)
 {
-	u32 reg_val = 0;
-	u32 reg_num = MT6350_CHR_CON18;
-	u32 i = 0;
-
-	for(i=reg_num ; i<=MT6350_CHR_CON19 ; i+=2)
-	{
-		//reg_val = upmu_get_reg_value(i);
-		reg_val = pmic_get_register_value(i);
-		battery_xlog_printk(BAT_LOG_FULL, "Chr Reg[0x%x]=0x%x \r\n", i, reg_val);
-	}
 }
+#endif
+ 
+ 
 
-
- static void hw_bc11_init(void)
+ static unsigned int charging_hw_init(void *data)
  {
- 	 msleep(300);
-	 Charger_Detect_Init();
-		 
-	 //RG_BC11_BIAS_EN=1	
-	 //upmu_set_rg_bc11_bias_en(0x1);
-     pmic_set_register_value(PMIC_RG_BC11_BIAS_EN,1);
-	 //RG_BC11_VSRC_EN[1:0]=00
-	 //upmu_set_rg_bc11_vsrc_en(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_VSRC_EN,0);
-	 //RG_BC11_VREF_VTH = [1:0]=00
-	 //upmu_set_rg_bc11_vref_vth(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
-	 //RG_BC11_CMP_EN[1.0] = 00
-	 //upmu_set_rg_bc11_cmp_en(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
-	 //RG_BC11_IPU_EN[1.0] = 00
-	 //upmu_set_rg_bc11_ipu_en(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_IPU_EN,0);
-	 //RG_BC11_IPD_EN[1.0] = 00
-	 //upmu_set_rg_bc11_ipd_en(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_IPD_EN,0);
-	 //BC11_RST=1
-	 //upmu_set_rg_bc11_rst(0x1);
-	 pmic_set_register_value(PMIC_RG_BC11_RST,1);
-	 //BC11_BB_CTRL=1
-	 //upmu_set_rg_bc11_bb_ctrl(0x1);
-	 pmic_set_register_value(PMIC_RG_BC11_BB_CTRL,1);
- 
- 	 //msleep(10);
- 	 mdelay(50);
-
-	 if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	 {
-    		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_init() \r\n");
-		hw_bc11_dump_register();
-	 }	
-	 
- }
- 
- 
- static U32 hw_bc11_DCD(void)
- {
-	 U32 wChargerAvail = 0;
- 
-	 //RG_BC11_IPU_EN[1.0] = 10
-	 //upmu_set_rg_bc11_ipu_en(0x2);
-     pmic_set_register_value(PMIC_RG_BC11_IPU_EN,2);
-	 //RG_BC11_IPD_EN[1.0] = 01
-	 //upmu_set_rg_bc11_ipd_en(0x1);
-     pmic_set_register_value(PMIC_RG_BC11_IPD_EN,1);
-	 //RG_BC11_VREF_VTH = [1:0]=01
-	 //upmu_set_rg_bc11_vref_vth(0x1);
-     pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,1);
-	 //RG_BC11_CMP_EN[1.0] = 10
-	 //upmu_set_rg_bc11_cmp_en(0x2);
-     pmic_set_register_value(PMIC_RG_BC11_CMP_EN,2);
- 
-	 //msleep(20);
-	 mdelay(80);
-
- 	 //wChargerAvail = upmu_get_rgs_bc11_cmp_out();
-     wChargerAvail = pmic_get_register_value(PMIC_RGS_BC11_CMP_OUT);
-	 
-	 if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	 {
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_DCD() \r\n");
-		hw_bc11_dump_register();
-	 }
-	 
-	 //RG_BC11_IPU_EN[1.0] = 00
-	 //upmu_set_rg_bc11_ipu_en(0x0);
-     pmic_set_register_value(PMIC_RG_BC11_IPU_EN,0);
-	 //RG_BC11_IPD_EN[1.0] = 00
-	 //upmu_set_rg_bc11_ipd_en(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_IPD_EN,0);
-	 //RG_BC11_CMP_EN[1.0] = 00
-	 //upmu_set_rg_bc11_cmp_en(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
-	 //RG_BC11_VREF_VTH = [1:0]=00
-	 //upmu_set_rg_bc11_vref_vth(0x0);
-	 pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
- 
-	 return wChargerAvail;
- }
- 
- 
- static U32 hw_bc11_stepA1(void)
- {
-	U32 wChargerAvail = 0;
-
-	//RG_BC11_IPD_EN[1:0] = 01
-	//upmu_set_rg_bc11_ipd_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_IPD_EN,1);
-	//RG_BC11_VREF_VTH[1:0]=00
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
-	// RG_BC11_CMP_EN[1:0] = 01
-	//upmu_set_rg_bc11_cmp_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,1);
- 
-	//msleep(80);
-	mdelay(80);
- 
-	//wChargerAvail = upmu_get_rgs_bc11_cmp_out();
-	wChargerAvail = pmic_get_register_value(PMIC_RGS_BC11_CMP_OUT);
- 
-	if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	{
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_stepA1() \r\n");
-		hw_bc11_dump_register();
-	}
- 
-	//RG_BC11_IPD_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipd_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPD_EN,0);
-	//RG_BC11_CMP_EN[1.0] = 00
-	//upmu_set_rg_bc11_cmp_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
- 
-	return  wChargerAvail;
- }
- 
- 
- static U32 hw_bc11_stepB1(void)
- {
-	U32 wChargerAvail = 0;
-	  
-	//RG_BC11_IPU_EN[1.0] = 01
-	//upmu_set_rg_bc11_ipu_en(0x1);
-	//upmu_set_rg_bc11_ipd_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_IPD_EN,1);
-	//RG_BC11_VREF_VTH = [1:0]=10
-	//upmu_set_rg_bc11_vref_vth(0x2);
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
-	//RG_BC11_CMP_EN[1.0] = 01
-	//upmu_set_rg_bc11_cmp_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,1);
- 
-	//msleep(80);
-	mdelay(80);
- 
-	//wChargerAvail = upmu_get_rgs_bc11_cmp_out();
-	wChargerAvail = pmic_get_register_value(PMIC_RGS_BC11_CMP_OUT);
- 
-	if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	{
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_stepB1() \r\n");
-		hw_bc11_dump_register();
-	}
- 
-	//RG_BC11_IPU_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipu_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPU_EN,0);
-	//RG_BC11_CMP_EN[1.0] = 00
-	//upmu_set_rg_bc11_cmp_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
-	//RG_BC11_VREF_VTH = [1:0]=00
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
- 
-	return  wChargerAvail;
- }
- 
- 
- static U32 hw_bc11_stepC1(void)
- {
-	U32 wChargerAvail = 0;
-	  
-	//RG_BC11_IPU_EN[1.0] = 01
-	//upmu_set_rg_bc11_ipu_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_IPU_EN,1);
-	//RG_BC11_VREF_VTH = [1:0]=10
-	//upmu_set_rg_bc11_vref_vth(0x2);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,2);
-	//RG_BC11_CMP_EN[1.0] = 01
-	//upmu_set_rg_bc11_cmp_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,1);
- 
-	//msleep(80);
-	mdelay(80);
- 
-	//wChargerAvail = upmu_get_rgs_bc11_cmp_out();
-	wChargerAvail = pmic_get_register_value(PMIC_RGS_BC11_CMP_OUT);
- 
-	if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	{
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_stepC1() \r\n");
-		hw_bc11_dump_register();
-	}
- 
-	//RG_BC11_IPU_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipu_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPU_EN,0);
-	//RG_BC11_CMP_EN[1.0] = 00
-	//upmu_set_rg_bc11_cmp_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
-	//RG_BC11_VREF_VTH = [1:0]=00
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
- 
-	return  wChargerAvail;
- }
- 
- 
- static U32 hw_bc11_stepA2(void)
- {
-	U32 wChargerAvail = 0;
-	  
-	//RG_BC11_VSRC_EN[1.0] = 10 
-	//upmu_set_rg_bc11_vsrc_en(0x2);
-	pmic_set_register_value(PMIC_RG_BC11_VSRC_EN,2);
-	//RG_BC11_IPD_EN[1:0] = 01
-	//upmu_set_rg_bc11_ipd_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_IPD_EN,1);
-	//RG_BC11_VREF_VTH = [1:0]=00
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
-	//RG_BC11_CMP_EN[1.0] = 01
-	//upmu_set_rg_bc11_cmp_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,1);
- 
-	//msleep(80);
-	mdelay(80);
- 
-	//wChargerAvail = upmu_get_rgs_bc11_cmp_out();
-	wChargerAvail = pmic_get_register_value(PMIC_RGS_BC11_CMP_OUT);
- 
-	if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	{
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_stepA2() \r\n");
-		hw_bc11_dump_register();
-	}
- 
-	//RG_BC11_VSRC_EN[1:0]=00
-	//upmu_set_rg_bc11_vsrc_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VSRC_EN,0);
-	//RG_BC11_IPD_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipd_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPD_EN,0);
-	//RG_BC11_CMP_EN[1.0] = 00
-	//upmu_set_rg_bc11_cmp_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
- 
-	return  wChargerAvail;
- }
- 
- 
- static U32 hw_bc11_stepB2(void)
- {
-	U32 wChargerAvail = 0;
- 
-	//RG_BC11_IPU_EN[1:0]=10
-	//upmu_set_rg_bc11_ipu_en(0x2);
-	pmic_set_register_value(PMIC_RG_BC11_IPU_EN,2);
-	//RG_BC11_VREF_VTH = [1:0]=10
-	//upmu_set_rg_bc11_vref_vth(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,1);
-	//RG_BC11_CMP_EN[1.0] = 01
-	//upmu_set_rg_bc11_cmp_en(0x1);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,1);
- 
-	//msleep(80);
-	mdelay(80);
- 
-	//wChargerAvail = upmu_get_rgs_bc11_cmp_out();
-	wChargerAvail = pmic_get_register_value(PMIC_RGS_BC11_CMP_OUT);
- 
-	if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	{
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_stepB2() \r\n");
-		hw_bc11_dump_register();
-	}
- 
-	//RG_BC11_IPU_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipu_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPU_EN,0);
-	//RG_BC11_CMP_EN[1.0] = 00
-	//upmu_set_rg_bc11_cmp_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
-	//RG_BC11_VREF_VTH = [1:0]=00
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
- 
-	return  wChargerAvail;
- }
- 
- 
- static void hw_bc11_done(void)
- {
-	//RG_BC11_VSRC_EN[1:0]=00
-	//upmu_set_rg_bc11_vsrc_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VSRC_EN,0);
-	//RG_BC11_VREF_VTH = [1:0]=0
-	//upmu_set_rg_bc11_vref_vth(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_VREF_VTH,0);
-	//RG_BC11_CMP_EN[1.0] = 00
-	//upmu_set_rg_bc11_cmp_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_CMP_EN,0);
-	//RG_BC11_IPU_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipu_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPU_EN,0);
-	//RG_BC11_IPD_EN[1.0] = 00
-	//upmu_set_rg_bc11_ipd_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_IPD_EN,0);
-	//RG_BC11_BIAS_EN=0
-	//upmu_set_rg_bc11_bias_en(0x0);
-	pmic_set_register_value(PMIC_RG_BC11_BIAS_EN,0);
- 
-	Charger_Detect_Release();
-
-	if(Enable_BATDRV_LOG == BAT_LOG_FULL)
-	{
-		battery_xlog_printk(BAT_LOG_FULL, "hw_bc11_done() \r\n");
-		hw_bc11_dump_register();
-	}
-    
- }
-
- static u32 charging_hw_init(void *data)
- {
- 	u32 status = STATUS_OK;
+ 	unsigned int status = STATUS_OK;
 	static bool charging_init_flag = KAL_FALSE;
-	/*
-  node = of_find_compatible_node(NULL, NULL, "mediatek,charger_enable_node");
-  charger_enable_pin = of_get_named_gpio(node, "charger_enable", 0);
-  gpio_request(charger_enable_pin, "charger_enable");*/
-  
-  gpio_direction_output(charger_enable_pin, 0);
- 	//MDELAY(10);
-	gpio_set_value(charger_enable_pin, 0);
-
-	//mt_set_gpio_mode(gpio_number,gpio_on_mode);  
-	//mt_set_gpio_dir(gpio_number,gpio_on_dir);
-	//mt_set_gpio_out(gpio_number,gpio_on_out);
+#if 0	
+	mt_set_gpio_mode(gpio_number,gpio_on_mode);  
+	mt_set_gpio_dir(gpio_number,gpio_on_dir);
+	mt_set_gpio_out(gpio_number,gpio_on_out);
+#endif
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	mt_set_gpio_mode(wireless_charger_gpio_number,0); // 0:GPIO mode
 	mt_set_gpio_dir(wireless_charger_gpio_number,0); // 0: input, 1: output
 #endif
 	//battery_xlog_printk(BAT_LOG_FULL, "gpio_number=0x%x,gpio_on_mode=%d,gpio_off_mode=%d\n", gpio_number, gpio_on_mode, gpio_off_mode);
 	
-	//upmu_set_rg_usbdl_rst(1);		//force leave USBDL mode
-	pmic_set_register_value(PMIC_RG_USBDL_RST,1);
+    pmic_set_register_value(PMIC_RG_USBDL_RST,1);//force leave USBDL mode
 #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-	bq24158_config_interface_liao(0x06,0x77); // ISAFE = 1250mA, VSAFE = 4.34V
+	bq24158_config_interface_liao(0x06,0x49); // ISAFE = 1250mA, VSAFE = 4.34V
 #else
 	bq24158_config_interface_liao(0x06,0x70);
 #endif
 	    
 	bq24158_config_interface_liao(0x00,0xC0);	//kick chip watch dog
-	bq24158_config_interface_liao(0x01,0xb8);	//TE=1, CE=0, HZ_MODE=0, OPA_MODE=0
+	bq24158_config_interface_liao(0x01,0xd8);//0xb8);	//TE=1, CE=0, HZ_MODE=0, OPA_MODE=0
 	bq24158_config_interface_liao(0x05,0x03);
     
-	bq24158_config_interface_liao(0x04,0x1A); //146mA
+	bq24158_config_interface_liao(0x04,0x19); //146mA
 	if ( !charging_init_flag ) {   
-		bq24158_config_interface_liao(0x04,0x1A); //146mA
+		bq24158_config_interface_liao(0x04,0x19); //146mA
 		charging_init_flag = KAL_TRUE;
 	}        
  	return status;
  }
 
 
- static u32 charging_dump_register(void *data)
+ static unsigned int charging_dump_register(void *data)
  {
- 	u32 status = STATUS_OK;
+ 	unsigned int status = STATUS_OK;
 
 	bq24158_dump_register();
    	
@@ -637,10 +260,10 @@ static void hw_bc11_dump_register(void)
  }	
 
 
- static u32 charging_enable(void *data)
+ static unsigned int charging_enable(void *data)
  {
- 	u32 status = STATUS_OK;
-	u32 enable = *(u32*)(data);
+ 	unsigned int status = STATUS_OK;
+	unsigned int enable = *(unsigned int*)(data);
 
 	if(KAL_TRUE == enable) {
 		bq24158_set_ce(0);
@@ -652,16 +275,13 @@ static void hw_bc11_dump_register(void)
    		if(mt_usb_is_device())
 #endif 			
 		{
-			bq24158_set_ce(1);
-			/*
+#if 0
 			mt_set_gpio_mode(gpio_number,gpio_off_mode);  
 			mt_set_gpio_dir(gpio_number,gpio_off_dir);
 			mt_set_gpio_out(gpio_number,gpio_off_out);
-      */
-      gpio_direction_output(charger_enable_pin, 0);
- 	//MDELAY(10);
-	    gpio_set_value(charger_enable_pin, 1);
-			
+#endif
+
+			// bq24158_set_ce(1);
 			if (charging_get_error_state()) {
 				bq24158_set_ce(0x1);
 				battery_xlog_printk(BAT_LOG_CRTI,"[charging_enable] bq24158_set_hz_mode(0x1)\n");
@@ -673,42 +293,42 @@ static void hw_bc11_dump_register(void)
  }
 
 
- static u32 charging_set_cv_voltage(void *data)
+ static unsigned int charging_set_cv_voltage(void *data)
  {
- 	u32 status = STATUS_OK;
-	u16 register_value;
-	//u32 cv_value = *(u32 *)(data);
+ 	unsigned int status = STATUS_OK;
+	unsigned short register_value;
+	//unsigned int cv_value = *(unsigned int *)(data);
 
-	register_value = charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH) ,*(u32 *)(data));
+	register_value = charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH) ,*(unsigned int *)(data));
 	bq24158_set_oreg(register_value); 
 
 	return status;
  } 	
 
 
- static u32 charging_get_current(void *data)
+ static unsigned int charging_get_current(void *data)
  {
-    u32 status = STATUS_OK;
-    u32 array_size;
-    u8 reg_value;
+    unsigned int status = STATUS_OK;
+    unsigned int array_size;
+    unsigned char reg_value;
 	
     //Get current level
     array_size = GETARRAYNUM(CS_VTH);
     bq24158_read_interface(0x1, &reg_value, 0x3, 0x6);	//IINLIM
-    *(u32 *)data = charging_value_to_parameter(CS_VTH,array_size,reg_value);
+    *(unsigned int *)data = charging_value_to_parameter(CS_VTH,array_size,reg_value);
 	
     return status;
  }  
   
 
 
- static u32 charging_set_current(void *data)
+ static unsigned int charging_set_current(void *data)
  {
- 	u32 status = STATUS_OK;
-	u32 set_chr_current;
-	u32 array_size;
-	u32 register_value;
-	u32 current_value = *(u32 *)data;
+ 	unsigned int status = STATUS_OK;
+	unsigned int set_chr_current;
+	unsigned int array_size;
+	unsigned int register_value;
+	unsigned int current_value = *(unsigned int *)data;
 
 	if(current_value <= CHARGE_CURRENT_350_00_MA)
 	{
@@ -726,21 +346,21 @@ static void hw_bc11_dump_register(void)
  } 	
  
 
- static u32 charging_set_input_current(void *data)
+ static unsigned int charging_set_input_current(void *data)
  {
- 	u32 status = STATUS_OK;
-	u32 set_chr_current;
-	u32 array_size;
-	u32 register_value;
+ 	unsigned int status = STATUS_OK;
+	unsigned int set_chr_current;
+	unsigned int array_size;
+	unsigned int register_value;
 
-    if(*(u32 *)data > CHARGE_CURRENT_500_00_MA)
+    if(*(unsigned int *)data > CHARGE_CURRENT_500_00_MA)
     {
         register_value = 0x3;
     }
     else
     {
     	array_size = GETARRAYNUM(INPUT_CS_VTH);
-    	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size, *(u32 *)data);
+    	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size, *(unsigned int *)data);
     	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size ,set_chr_current);	
     }
     
@@ -750,25 +370,25 @@ static void hw_bc11_dump_register(void)
  } 	
 
 
- static u32 charging_get_charging_status(void *data)
+ static unsigned int charging_get_charging_status(void *data)
  {
- 	u32 status = STATUS_OK;
-	u32 ret_val;
+ 	unsigned int status = STATUS_OK;
+	unsigned int ret_val;
 
 	ret_val = bq24158_get_chip_status();
 	
 	if(ret_val == 0x2)
-		*(u32 *)data = KAL_TRUE;
+		*(unsigned int *)data = KAL_TRUE;
 	else
-		*(u32 *)data = KAL_FALSE;
+		*(unsigned int *)data = KAL_FALSE;
 	
 	return status;
  } 	
 
 
- static u32 charging_reset_watch_dog_timer(void *data)
+ static unsigned int charging_reset_watch_dog_timer(void *data)
  {
-	 u32 status = STATUS_OK;
+	 unsigned int status = STATUS_OK;
  
 	 bq24158_set_tmr_rst(1);
 	 
@@ -776,63 +396,71 @@ static void hw_bc11_dump_register(void)
  }
  
  
-  static u32 charging_set_hv_threshold(void *data)
+  static unsigned int charging_set_hv_threshold(void *data)
   {
-	 u32 status = STATUS_OK;
+	 unsigned int status = STATUS_OK;
  
-	 u32 set_hv_voltage;
-	 u32 array_size;
-	 u16 register_value;
-	 u32 voltage = *(u32*)(data);
+	 unsigned int set_hv_voltage;
+	 unsigned int array_size;
+	 unsigned short register_value;
+	 unsigned int voltage = *(unsigned int*)(data);
 	 
 	 array_size = GETARRAYNUM(VCDT_HV_VTH);
 	 set_hv_voltage = bmt_find_closest_level(VCDT_HV_VTH, array_size, voltage);
 	 register_value = charging_parameter_to_value(VCDT_HV_VTH, array_size ,set_hv_voltage);
-	 //upmu_set_rg_vcdt_hv_vth(register_value);
-	 pmic_set_register_value(PMIC_RG_VCDT_HV_VTH,register_value);
+     pmic_set_register_value(PMIC_RG_VCDT_HV_VTH,register_value);
  
 	 return status;
   }
  
  
-  static u32 charging_get_hv_status(void *data)
+  static unsigned int charging_get_hv_status(void *data)
   {
-	   u32 status = STATUS_OK;
+	   unsigned int status = STATUS_OK;
  
-	   //*(kal_bool*)(data) = upmu_get_rgs_vcdt_hv_det();
 	   *(kal_bool*)(data) = pmic_get_register_value(PMIC_RGS_VCDT_HV_DET);
 	   
 	   return status;
   }
 
 
- static u32 charging_get_battery_status(void *data)
+ static unsigned int charging_get_battery_status(void *data)
  {
-	   u32 status = STATUS_OK;
- 
- 	   //upmu_set_baton_tdet_en(1);
- 	   pmic_set_register_value(PMIC_BATON_TDET_EN,1);
-	   //upmu_set_rg_baton_en(1);
-	   pmic_set_register_value(PMIC_RG_BATON_EN,1);
-	   //*(kal_bool*)(data) = upmu_get_rgs_baton_undet();
-       *(kal_bool*)(data) = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
-	   
-	   return status;
+   unsigned int status = STATUS_OK;
+   unsigned int val = 0;
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
+   *(kal_bool*)(data) = 0; // battery exist
+   battery_log(BAT_LOG_CRTI,"bat exist for evb\n");
+#else
+   val=pmic_get_register_value(PMIC_BATON_TDET_EN);
+   battery_log(BAT_LOG_FULL,"[charging_get_battery_status] BATON_TDET_EN =     %d\n", val);
+   if (val) {
+     pmic_set_register_value(PMIC_BATON_TDET_EN,1);
+     pmic_set_register_value(PMIC_RG_BATON_EN,1);
+     *(kal_bool*)(data) = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+   } else {
+     *(kal_bool*)(data) =  KAL_FALSE;
+   }   
+#endif
+
+   return status;
+
  }
 
 
- static u32 charging_get_charger_det_status(void *data)
+ static unsigned int charging_get_charger_det_status(void *data)
  {
-	u32 status = STATUS_OK;
- 
-	//*(kal_bool*)(data) = upmu_get_rgs_chrdet();
-	*(kal_bool*)(data) = pmic_get_register_value(PMIC_RGS_CHRDET);
-	   
-	//if( upmu_get_rgs_chrdet() == 0 )
-	if( pmic_get_register_value(PMIC_RGS_CHRDET) == 0)
-		g_charger_type = CHARGER_UNKNOWN;
-       
-	return status;
+   unsigned int status = STATUS_OK;
+
+#if defined(CONFIG_MTK_FPGA)
+   *(kal_bool*)(data) = 1;
+   battery_log(BAT_LOG_CRTI,"chr exist for fpga\n");
+#else
+   *(kal_bool*)(data) = pmic_get_register_value(PMIC_RGS_CHRDET);
+#endif
+
+   return status;
+
  }
 
 
@@ -842,119 +470,56 @@ kal_bool charging_type_detection_done(void)
 }
 
 
- static u32 charging_get_charger_type(void *data)
+ static unsigned int charging_get_charger_type(void *data)
  {
-	 u32 status = STATUS_OK;
-#if defined(CONFIG_POWER_EXT)
+	 unsigned int status = STATUS_OK;
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	 *(CHARGER_TYPE*)(data) = STANDARD_HOST;
 #else
-#if defined(MTK_WIRELESS_CHARGER_SUPPORT)
-	int wireless_state = 0;
-	wireless_state = mt_get_gpio_in(wireless_charger_gpio_number);
-	if(wireless_state == WIRELESS_CHARGER_EXIST_STATE) {
-		*(CHARGER_TYPE*)(data) = WIRELESS_CHARGER;
-		battery_xlog_printk(BAT_LOG_CRTI, "WIRELESS_CHARGER!\r\n");
-		return status;
-	}
-#endif
-	if(g_charger_type!=CHARGER_UNKNOWN && g_charger_type!=WIRELESS_CHARGER) {
-		*(CHARGER_TYPE*)(data) = g_charger_type;
-		battery_xlog_printk(BAT_LOG_CRTI, "return %d!\r\n", g_charger_type);
-		return status;
-	}
-
-	charging_type_det_done = KAL_FALSE;
-	/********* Step initial  ***************/		 
-	hw_bc11_init();
- 
-	/********* Step DCD ***************/  
-	if(1 == hw_bc11_DCD())
-	{
-		 /********* Step A1 ***************/
-		 if(1 == hw_bc11_stepA1())
-		 {
-			*(CHARGER_TYPE*)(data) = APPLE_2_1A_CHARGER;
-			battery_xlog_printk(BAT_LOG_CRTI, "step A1 : Apple 2.1A CHARGER!\r\n");
-			 }	 
-			 else
-			 {
-				*(CHARGER_TYPE*)(data) = NONSTANDARD_CHARGER;
-				battery_xlog_printk(BAT_LOG_CRTI, "step A1 : Non STANDARD CHARGER!\r\n");
-			 }	 
-		 }
-	else
-	{
-		 /********* Step A2 ***************/
-		 if(1 == hw_bc11_stepA2())
-		 {
-			 /********* Step B2 ***************/
-			 if(1 == hw_bc11_stepB2())
-			 {
-				 *(CHARGER_TYPE*)(data) = STANDARD_CHARGER;
-				 battery_xlog_printk(BAT_LOG_CRTI, "step B2 : STANDARD CHARGER!\r\n");
-			 }
-			 else
-			 {
-				 *(CHARGER_TYPE*)(data) = CHARGING_HOST;
-				 battery_xlog_printk(BAT_LOG_CRTI, "step B2 :  Charging Host!\r\n");
-			 }
-		 }
-		 else
-		 {
-			*(CHARGER_TYPE*)(data) = STANDARD_HOST;
-			 battery_xlog_printk(BAT_LOG_CRTI, "step A2 : Standard USB Host!\r\n");
-		 }
- 
-	}
- 
-	 /********* Finally setting *******************************/
-	 hw_bc11_done();
-
- 	charging_type_det_done = KAL_TRUE;
-
-	g_charger_type = *(CHARGER_TYPE*)(data);
+     *(CHARGER_TYPE*)(data) = hw_charging_get_charger_type();
 #endif
 	 return status;
 }
 
-static u32 charging_get_is_pcm_timer_trigger(void *data)
+static unsigned int charging_get_is_pcm_timer_trigger(void *data)
 {
-    u32 status = STATUS_OK;
-/*
+    unsigned int status = STATUS_OK;
+
     if(slp_get_wake_reason() == WR_PCM_TIMER)
         *(kal_bool*)(data) = KAL_TRUE;
     else
         *(kal_bool*)(data) = KAL_FALSE;
+
     battery_xlog_printk(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
-       */
+       
     return status;
 }
 
-static u32 charging_set_platform_reset(void *data)
+static unsigned int charging_set_platform_reset(void *data)
 {
-    u32 status = STATUS_OK;
+    unsigned int status = STATUS_OK;
 
     battery_xlog_printk(BAT_LOG_CRTI, "charging_set_platform_reset\n");
  
-    //arch_reset(0,NULL);
+    arch_reset(0,NULL);
         
     return status;
 }
 
-static u32 charging_get_platfrom_boot_mode(void *data)
+static unsigned int charging_get_platfrom_boot_mode(void *data)
 {
-    u32 status = STATUS_OK;
+    unsigned int status = STATUS_OK;
   
-    *(u32*)(data) = get_boot_mode();
+    *(unsigned int*)(data) = get_boot_mode();
 
     battery_xlog_printk(BAT_LOG_CRTI, "get_boot_mode=%d\n", get_boot_mode());
          
     return status;
 }
 
-static u32 charging_set_power_off(void *data)
+static unsigned int charging_set_power_off(void *data)
 {
-    u32 status = STATUS_OK;
+    unsigned int status = STATUS_OK;
 
     battery_xlog_printk(BAT_LOG_CRTI, "charging_set_power_off\n");
     mt_power_off();
@@ -962,37 +527,37 @@ static u32 charging_set_power_off(void *data)
     return status;
 }
 
-static u32 charging_get_power_source(void *data)
+static unsigned int charging_get_power_source(void *data)
 {
-	u32 status = STATUS_UNSUPPORTED;
+	unsigned int status = STATUS_UNSUPPORTED;
 
 	return status;
 }
 
-static u32 charging_get_csdac_full_flag(void *data)
+static unsigned int charging_get_csdac_full_flag(void *data)
 {
 	return STATUS_UNSUPPORTED;	
 }
 
-static u32 charging_set_ta_current_pattern(void *data)
+static unsigned int charging_set_ta_current_pattern(void *data)
 {
 	return STATUS_UNSUPPORTED;	
 }
 
-static u32 charging_get_error_state(void)
+static unsigned int charging_get_error_state(void)
 {
 	return charging_error;
 }
 
-static u32 charging_set_error_state(void *data)
+static unsigned int charging_set_error_state(void *data)
 {
-	u32 status = STATUS_OK;
-	charging_error = *(u32*)(data);
+	unsigned int status = STATUS_OK;
+	charging_error = *(unsigned int*)(data);
 	
 	return status;
 }
 
- static u32 (* const charging_func[CHARGING_CMD_NUMBER])(void *data)=
+ static unsigned int (* const charging_func[CHARGING_CMD_NUMBER])(void *data)=
  {
  	  charging_hw_init
 	,charging_dump_register  	
@@ -1037,9 +602,9 @@ static u32 charging_set_error_state(void *data)
  * GLOBALS AFFECTED
  *	   None
  */
- s32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
+ signed int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
  {
-	 s32 status;
+	signed int status;
 	 if(cmd < CHARGING_CMD_NUMBER)
 		 status = charging_func[cmd](data);
 	 else
@@ -1047,3 +612,4 @@ static u32 charging_set_error_state(void *data)
  
 	 return status;
  }
+

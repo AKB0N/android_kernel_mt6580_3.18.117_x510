@@ -19,31 +19,9 @@
 
 #ifndef _bq24158_SW_H_
 #define _bq24158_SW_H_
-#include <mt-plat/mt_typedefs.h>
 
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <linux/mm_types.h>
-#include <linux/module.h>
-#include <linux/types.h>
-#include <linux/slab.h>
-#include <linux/vmalloc.h>
-#include <linux/gpio.h>
-#include <linux/device.h>
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#include <linux/of_device.h>
-#include <linux/regulator/consumer.h>
-#include <linux/clk.h>
-#include <linux/pinctrl/consumer.h>
-#include <linux/of_gpio.h>
-#endif
-//#define HIGH_BATTERY_VOLTAGE_SUPPORT
-
-extern unsigned int charger_enable_pin;
+#define HIGH_BATTERY_VOLTAGE_SUPPORT
+#include "mt_spm.h"
 
 #define bq24158_CON0      0x00
 #define bq24158_CON1      0x01
@@ -157,45 +135,46 @@ extern unsigned int charger_enable_pin;
   *
   *********************************************************/
 //CON0----------------------------------------------------
-extern void bq24158_set_tmr_rst(u32 val);
-extern u32 bq24158_get_otg_status(void);
-extern void bq24158_set_en_stat(u32 val);
-extern u32 bq24158_get_chip_status(void);
-extern u32 bq24158_get_boost_status(void);
-extern u32 bq24158_get_fault_status(void);
+extern void bq24158_set_tmr_rst(unsigned int val);
+extern unsigned int bq24158_get_otg_status(void);
+extern void bq24158_set_en_stat(unsigned int val);
+extern unsigned int bq24158_get_chip_status(void);
+extern unsigned int bq24158_get_boost_status(void);
+extern unsigned int bq24158_get_fault_status(void);
 //CON1----------------------------------------------------
-extern void bq24158_set_input_charging_current(u32 val);
-extern void bq24158_set_v_low(u32 val);
-extern void bq24158_set_te(u32 val);
-extern void bq24158_set_ce(u32 val);
-extern void bq24158_set_hz_mode(u32 val);
-extern void bq24158_set_opa_mode(u32 val);
+extern void bq24158_set_input_charging_current(unsigned int val);
+extern void bq24158_set_v_low(unsigned int val);
+extern void bq24158_set_te(unsigned int val);
+extern void bq24158_set_ce(unsigned int val);
+extern void bq24158_set_hz_mode(unsigned int val);
+extern void bq24158_set_opa_mode(unsigned int val);
 //CON2----------------------------------------------------
-extern void bq24158_set_oreg(u32 val);
-extern void bq24158_set_otg_pl(u32 val);
-extern void bq24158_set_otg_en(u32 val);
+extern void bq24158_set_oreg(unsigned int val);
+extern void bq24158_set_otg_pl(unsigned int val);
+extern void bq24158_set_otg_en(unsigned int val);
 //CON3----------------------------------------------------
-extern u32 bq24158_get_vender_code(void);
-extern u32 bq24158_get_pn(void);
-extern u32 bq24158_get_revision(void);
+extern unsigned int bq24158_get_vender_code(void);
+extern unsigned int bq24158_get_pn(void);
+extern unsigned int bq24158_get_revision(void);
 //CON4----------------------------------------------------
-extern void bq24158_set_reset(u32 val);
-extern void bq24158_set_iocharge(u32 val);
-extern void bq24158_set_iterm(u32 val);
+extern void bq24158_set_reset(unsigned int val);
+extern void bq24158_set_iocharge(unsigned int val);
+extern void bq24158_set_iterm(unsigned int val);
 //CON5----------------------------------------------------
-extern void bq24158_set_dis_vreg(u32 val);
-extern void bq24158_set_io_level(u32 val);
-extern u32 bq24158_get_sp_status(void);
-extern u32 bq24158_get_en_level(void);
-extern void bq24158_set_vsp(u32 val);
+extern void bq24158_set_dis_vreg(unsigned int val);
+extern void bq24158_set_io_level(unsigned int val);
+extern unsigned int bq24158_get_sp_status(void);
+extern unsigned int bq24158_get_en_level(void);
+extern void bq24158_set_vsp(unsigned int val);
 //CON6----------------------------------------------------
-extern void bq24158_set_i_safe(u32 val);
-extern void bq24158_set_v_safe(u32 val);
+extern void bq24158_set_i_safe(unsigned int val);
+extern void bq24158_set_v_safe(unsigned int val);
 //---------------------------------------------------------
 extern void bq24158_dump_register(void);
-extern u32 bq24158_config_interface_liao (u8 RegNum, u8 val);
+extern int bq24158_config_interface_liao (unsigned char RegNum, unsigned char val);
 
-extern u32 bq24158_read_interface (u8 RegNum, u8 *val, u8 MASK, u8 SHIFT);
-extern u32 bq24158_config_interface (u8 RegNum, u8 val, u8 MASK, u8 SHIFT);
+extern int bq24158_read_interface (unsigned char RegNum, unsigned char *val, unsigned char MASK, unsigned char SHIFT);
+extern int bq24158_config_interface (unsigned char RegNum, unsigned char val, unsigned char MASK, unsigned char SHIFT);
+extern wake_reason_t slp_get_wake_reason(void);
 
 #endif // _bq24158_SW_H_

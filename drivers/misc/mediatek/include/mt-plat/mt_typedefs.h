@@ -1,3 +1,4 @@
+
 #ifndef _TYPEDEFS_H
 #define _TYPEDEFS_H
 
@@ -248,4 +249,3 @@ typedef enum {
 
 
 #endif  // _TYPEDEFS_H
-
