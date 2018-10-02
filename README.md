@@ -6,6 +6,7 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 | LCM driver #1 | `nt35521_dsi_vdo_yushun_cmi_hd720` | Yes | Yes |
 | LCM driver #2 | `hx8394d_dsi_vdo_hlt_hsd_hd720` | Yes | Yes |
 | Touch panel | `GT9XX (i2c 1-005D)` | Yes | Yes |
+| Charge | `BQ24158 (i2c 1-006A)` | Yes | Yes |
 | GPU | `Mali-400 MP` | Yes | Yes |
 | Camera #1 | `ov8865_mipi_raw` | Yes | Yes |
 | Camera #2 | `gc2755_mipi_raw` | Yes | No |
@@ -26,6 +27,7 @@ Bugs :
 Alsps
 Front camera
 Upside Down back camera
+LCM reset VOLT
 
 
 ## Acknowledgements
