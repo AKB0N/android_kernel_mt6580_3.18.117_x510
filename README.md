@@ -24,10 +24,10 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 
 Bugs :
 
-Alsps
-Front camera
-Upside Down back camera
-LCM reset VOLT
+* Alsps
+* Front camera
+* Upside Down back camera
+* LCM reset VOLT
 
 
 ## Acknowledgements
