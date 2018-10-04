@@ -230,69 +230,72 @@ int cm36283_enable_ps(struct i2c_client *client, int enable)
 	int res;
 	u8 databuf[3];
 
-	if (enable == 1) {
-		APS_LOG("cm36283_enable_ps enable_ps\n");
-		databuf[0]= CM36283_REG_PS_CONF3_MS;
-		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-		if(res < 0)
-		{
-			APS_ERR("i2c_master_send function err\n");
-			goto ENABLE_PS_EXIT_ERR;
-		}
-		APS_LOG("CM36283_REG_PS_CONF3_MS value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+	if (enable == 1) 
+	{
+			APS_LOG("cm36283_enable_ps enable_ps\n");
+			databuf[0]= CM36283_REG_PS_CONF3_MS;
+			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+			if(res < 0)
+			{
+				APS_ERR("i2c_master_send function err\n");
+				goto ENABLE_PS_EXIT_ERR;
+			}
+			APS_LOG("CM36283_REG_PS_CONF3_MS value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 
-		databuf[0]= CM36283_REG_PS_CANC;
-		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-		if(res < 0)
-		{
-			APS_ERR("i2c_master_send function err\n");
-			goto ENABLE_PS_EXIT_ERR;
-		}
-		APS_LOG("CM36283_REG_PS_CANC value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+			databuf[0]= CM36283_REG_PS_CANC;
+			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+			if(res < 0)
+			{
+				APS_ERR("i2c_master_send function err\n");
+				goto ENABLE_PS_EXIT_ERR;
+			}
+			APS_LOG("CM36283_REG_PS_CANC value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
 
-		APS_LOG("cm36283_enable_ps enable_ps\n");
-		databuf[0] = CM36283_REG_PS_CONF1_2;
-		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-		if (res < 0) {
-			APS_ERR("i2c_master_send function err\n");
-			goto ENABLE_PS_EXIT_ERR;
-		}
-		APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
-		databuf[2] = databuf[1];
-		databuf[1] = databuf[0]&0xFE;
-		databuf[0] = CM36283_REG_PS_CONF1_2;
-		res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-		if (res < 0) {
-			APS_ERR("i2c_master_send function err\n");
-			goto ENABLE_PS_EXIT_ERR;
-		}
-		atomic_set(&obj->ps_deb_on, 1);
-		atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
-		intr_flag = 1; /* reset hw status to away after enable. */
-	} else {
-		APS_LOG("cm36283_enable_ps disable_ps\n");
-		databuf[0] = CM36283_REG_PS_CONF1_2;
-		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-		if (res < 0) {
-			APS_ERR("i2c_master_send function err\n");
-			goto ENABLE_PS_EXIT_ERR;
-		}
-		APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
+			databuf[0] = CM36283_REG_PS_CONF1_2;
+			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+			if (res < 0) {
+				APS_ERR("i2c_master_send function err\n");
+				goto ENABLE_PS_EXIT_ERR;
+			}
+			APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
-		databuf[2] = databuf[1];
-		databuf[1] = databuf[0]|0x01;
-		databuf[0] = CM36283_REG_PS_CONF1_2;
+			databuf[2] = databuf[1];
+			databuf[1] = databuf[0]&0xFE;
 
-		res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-		if (res < 0) {
-			APS_ERR("i2c_master_send function err\n");
-			goto ENABLE_PS_EXIT_ERR;
+			databuf[0] = CM36283_REG_PS_CONF1_2;
+			res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+			if (res < 0) {
+				APS_ERR("i2c_master_send function err\n");
+				goto ENABLE_PS_EXIT_ERR;
+			}
+			atomic_set(&obj->ps_deb_on, 1);
+			atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
+			intr_flag = 1; /* reset hw status to away after enable. */
+		} 
+	else{
+			APS_LOG("cm36283_enable_ps disable_ps\n");
+			databuf[0] = CM36283_REG_PS_CONF1_2;
+			res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+			if (res < 0) {
+				APS_ERR("i2c_master_send function err\n");
+				goto ENABLE_PS_EXIT_ERR;
+			}
+			APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
+
+			databuf[2] = databuf[1];
+			databuf[1] = databuf[0]|0x01;
+			databuf[0] = CM36283_REG_PS_CONF1_2;
+
+			res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+			if (res < 0) {
+				APS_ERR("i2c_master_send function err\n");
+				goto ENABLE_PS_EXIT_ERR;
+			}
+			atomic_set(&obj->ps_deb_on, 0);
 		}
-		atomic_set(&obj->ps_deb_on, 0);
-	}
 
 	return 0;
-ENABLE_PS_EXIT_ERR:
+	ENABLE_PS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
@@ -303,47 +306,56 @@ int cm36283_enable_als(struct i2c_client *client, int enable)
 	u8 databuf[3];
 
 	if (enable == 1) {
-		/* APS_LOG("cm36283_enable_als enable_als\n"); */
+		APS_LOG("cm36283_enable_als enable_als\n");
 		databuf[0] = CM36283_REG_CS_CONF;
 		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
 		}
-		/* APS_LOG("CM36283_REG_CS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]); */
+		APS_LOG("CM36283_REG_CS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 		databuf[2] = databuf[1];
 		databuf[1] = databuf[0]&0xFE;
 		databuf[0] = CM36283_REG_CS_CONF;
+		client->addr &=I2C_MASK_FLAG;
+
 		res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-		if (res < 0) {
+		if (res < 0)
+		{
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
 		}
 		atomic_set(&obj->als_deb_on, 1);
 		atomic_set(&obj->als_deb_end, jiffies+atomic_read(&obj->als_debounce)/(1000/HZ));
-	} else {
-		/* APS_LOG("cm36283_enable_als disable_als\n"); */
+	}
+else{
+		APS_LOG("cm36283_enable_als disable_als\n");
 		databuf[0] = CM36283_REG_CS_CONF;
 		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-		if (res < 0) {
+		if (res < 0)
+		{
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
 		}
-		/* APS_LOG("CM36283_REG_CS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]); */
+
+		APS_LOG("CM36283_REG_CS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 		databuf[2] = databuf[1];
 		databuf[1] = databuf[0]|0x01;
 		databuf[0] = CM36283_REG_CS_CONF;
+		client->addr &=I2C_MASK_FLAG;
+
 		res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
-		if (res < 0) {
+		if (res < 0)
+		{
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
 		}
 		atomic_set(&obj->als_deb_on, 0);
 	}
 	return 0;
-ENABLE_ALS_EXIT_ERR:
+	ENABLE_ALS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
@@ -355,19 +367,20 @@ long cm36283_read_ps(struct i2c_client *client, u8 *data)
 
 	databuf[0] = CM36283_REG_PS_DATA;
 	res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
-	if (res < 0) {
+	if (res < 0)
+	{
 		APS_ERR("i2c_master_send function err\n");
 		goto READ_PS_EXIT_ERR;
 	}
-	if (atomic_read(&obj->trace) & CMC_TRC_DEBUG)
-		APS_LOG("CM36283_REG_PS_DATA value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
+	
+	//APS_LOG("CM36283_REG_PS_DATA value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 	if (databuf[0] < obj->ps_cali)
 		*data = 0;
 	else
 		*data = databuf[0] - obj->ps_cali;
 	return 0;
-READ_PS_EXIT_ERR:
+	READ_PS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
@@ -388,9 +401,8 @@ long cm36283_read_als(struct i2c_client *client, u16 *data)
 		APS_LOG("CM36283_REG_ALS_DATA value: %d\n", ((databuf[1]<<8)|databuf[0]));
 
 	*data = ((databuf[1]<<8)|databuf[0]);
-
 	return 0;
-READ_ALS_EXIT_ERR:
+	READ_ALS_EXIT_ERR:
 	return res;
 }
 /********************************************************************/
@@ -398,8 +410,8 @@ static int cm36283_get_ps_value(struct cm36283_priv *obj, u8 ps)
 {
 	int val, mask = atomic_read(&obj->ps_mask);
 	int invalid = 0;
-
 	val = intr_flag; /* value between high/low threshold should sync. with hw status. */
+
 	if (ps > atomic_read(&obj->ps_thd_val_high))
 		val = 0;  /*close*/
 	else if (ps < atomic_read(&obj->ps_thd_val_low))
