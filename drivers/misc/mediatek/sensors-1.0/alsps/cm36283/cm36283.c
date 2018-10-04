@@ -232,13 +232,32 @@ int cm36283_enable_ps(struct i2c_client *client, int enable)
 
 	if (enable == 1) {
 		APS_LOG("cm36283_enable_ps enable_ps\n");
+		databuf[0]= CM36283_REG_PS_CONF3_MS;
+		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+		if(res < 0)
+		{
+			APS_ERR("i2c_master_send function err\n");
+			goto ENABLE_PS_EXIT_ERR;
+		}
+		APS_LOG("CM36283_REG_PS_CONF3_MS value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+
+		databuf[0]= CM36283_REG_PS_CANC;
+		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
+		if(res < 0)
+		{
+			APS_ERR("i2c_master_send function err\n");
+			goto ENABLE_PS_EXIT_ERR;
+		}
+		APS_LOG("CM36283_REG_PS_CANC value value_low = %x, value_high = %x\n",databuf[0],databuf[1]);
+
+		APS_LOG("cm36283_enable_ps enable_ps\n");
 		databuf[0] = CM36283_REG_PS_CONF1_2;
 		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_PS_EXIT_ERR;
 		}
-		/* APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]); */
+		APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 		databuf[2] = databuf[1];
 		databuf[1] = databuf[0]&0xFE;
 		databuf[0] = CM36283_REG_PS_CONF1_2;
@@ -258,7 +277,7 @@ int cm36283_enable_ps(struct i2c_client *client, int enable)
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_PS_EXIT_ERR;
 		}
-		/* APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]); */
+		APS_LOG("CM36283_REG_PS_CONF1_2 value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 		databuf[2] = databuf[1];
 		databuf[1] = databuf[0]|0x01;
@@ -1111,7 +1130,16 @@ static int cm36283_init_client(struct i2c_client *client)
 		APS_ERR("i2c_master_send function err\n");
 		goto EXIT_ERR;
 	}
-	/* APS_LOG("cm36283 ps CM36283_REG_PS_CONF1_2 command!\n"); */
+
+	databuf[0] = CM36283_REG_PS_CONF3_MS;
+	databuf[1] = 0x10;
+	databuf[2] = 0x00;//need to confirm interrupt mode PS_MS mode whether to set
+	res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
+	if(res <= 0)
+	{
+		APS_ERR("i2c_master_send function err\n");
+		goto EXIT_ERR;
+	}
 
 	databuf[0] = CM36283_REG_PS_CANC;/* value need to confirm */
 	databuf[1] = 0x10;
@@ -1853,7 +1881,6 @@ static int cm36283_i2c_detect(struct i2c_client *client, struct i2c_board_info *
 {
 	strlcpy(info->type, CM36283_DEV_NAME, sizeof(info->type));
 	return 0;
-
 }
 */
 static int cm36283_i2c_suspend(struct i2c_client *client, pm_message_t msg)
@@ -1941,4 +1968,3 @@ module_exit(cm36283_exit);
 MODULE_AUTHOR("yucong xiong");
 MODULE_DESCRIPTION("cm36283 driver");
 MODULE_LICENSE("GPL");
-

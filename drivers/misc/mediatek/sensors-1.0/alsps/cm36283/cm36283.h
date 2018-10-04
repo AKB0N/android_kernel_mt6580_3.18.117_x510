@@ -22,6 +22,7 @@
 #define CM36283_REG_ALS_THDH		0X01
 #define CM36283_REG_ALS_THDL		0X02
 #define CM36283_REG_PS_CONF1_2		0X03
+#define CM36283_REG_PS_CONF3_MS		0X04
 #define CM36283_REG_PS_THD			0X05
 #define CM36283_REG_PS_CANC			0X06
 #define CM36283_REG_PS_DATA			0X07
@@ -113,4 +114,3 @@ extern bool alsps_success_Flag;
 #endif
 
 #endif
-
