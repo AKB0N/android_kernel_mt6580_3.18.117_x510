@@ -11,7 +11,7 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 | Camera #1 | `ov8865_mipi_raw` | Yes | Yes |
 | Camera #2 | `gc2755_mipi_raw` | Yes | No |
 | Accelerometer | `BMA222 (i2c 2-0018)` | Yes | Yes |
-| ALS/PS | `cm36283 (i2c 2-0060)` | Yes | No |
+| ALS/PS | `cm36283 (i2c 2-0060)` | Yes | Yes |
 | Flash | `Samsung R821MB` | Yes | Yes |
 | Lens #1 | `DW9714AF ` | Yes | Yes |
 | Lens #2 | `FM50AF (i2c 0-000c)` | Yes | No |

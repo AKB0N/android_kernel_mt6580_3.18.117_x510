@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 #include <mach/cust_adc.h>
 #define MIN_VOLTAGE (800)
-#define MAX_VOLTAGE (1200)
+#define MAX_VOLTAGE (1000)
 #define LCM_ID (0x8394)
 
 #define FRAME_WIDTH  										(720)
@@ -130,8 +130,8 @@ static void lcm_init(void)
 		 
 		data_array[0] = 0x00033902; 						
 		data_array[1] = 0x008372BA;
-		//data_array[2] = 0x0909b265;
-		//data_array[3] = 0x00001040;
+		data_array[2] = 0x0909b265;
+		data_array[3] = 0x00001040;
 		dsi_set_cmdq(data_array, 2, 1);
 		MDELAY(3);
 		   
@@ -180,8 +180,8 @@ static void lcm_init(void)
 		data_array[6] = 0x33070510; 						
 		data_array[7] = 0x370b0b33;
 		data_array[8] = 0x00070710;
-		//data_array[9] = 0x0A000000;	
-		//data_array[10] = 0x00000100;					  
+		data_array[9] = 0x0A000000;	
+		data_array[10] = 0x00000100;					  
 		dsi_set_cmdq(data_array, 9, 1);
 		
 		   
@@ -301,8 +301,8 @@ static unsigned int lcm_compare_id(void)
 		 
 		array[0] = 0x00033902; 						
 		array[1] = 0x008372BA;
-		//data_array[2] = 0x0909b265;
-		//data_array[3] = 0x00001040;
+		array[2] = 0x0909b265;
+		array[3] = 0x00001040;
 		dsi_set_cmdq(array, 2, 1);
 		MDELAY(3);	
 	
