@@ -110,17 +110,17 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 	if (is_on) {
 		/* power on VBUS, implement later... */
     #ifdef CONFIG_MTK_FAN5405_SUPPORT
-	fan5405_set_opa_mode(1);
-	fan5405_set_otg_pl(1);
-	fan5405_set_otg_en(1);
+		fan5405_set_opa_mode(1);
+		fan5405_set_otg_pl(1);
+		fan5405_set_otg_en(1);
 	#elif defined(CONFIG_MTK_BQ24158_SUPPORT)
-    bq24158_set_opa_mode(1);
-    bq24158_set_otg_pl(1);
-    bq24158_set_otg_en(1);
+		bq24158_set_opa_mode(1);
+		bq24158_set_otg_pl(1);
+		bq24158_set_otg_en(1);
 	#elif defined(CONFIG_MTK_NCP1851_SUPPORT) || defined(CONFIG_MTK_BQ24196_SUPPORT)
 		tbl_charger_otg_vbus((work_busy(&musb->id_pin_work.work) << 8) | 1);
 	#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
-	bq24261_set_en_boost(1);
+		bq24261_set_en_boost(1);
 	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
 		bq24296_set_otg_config(0x1); /* OTG */
 		bq24296_set_boostv(0x7); /* boost voltage 4.998V */

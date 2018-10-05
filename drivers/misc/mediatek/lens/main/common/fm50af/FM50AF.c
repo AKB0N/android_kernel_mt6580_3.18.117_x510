@@ -25,8 +25,8 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "FM50AF_DRV"
-#define AF_I2C_SLAVE_ADDR        0x18
+#define AF_DRVNAME "FM50AF"
+#define AF_I2C_SLAVE_ADDR        0x19
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
