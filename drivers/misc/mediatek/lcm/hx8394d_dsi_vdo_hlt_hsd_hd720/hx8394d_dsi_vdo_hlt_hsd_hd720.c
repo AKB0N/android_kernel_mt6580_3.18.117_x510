@@ -1,6 +1,7 @@
+
 #ifndef BUILD_LK
 #include <linux/string.h>
-#include <mt_gpio.h>
+#include <mt-plat/mt_gpio.h>
 #else
 #include <platform/mt_gpio.h>
 #endif
@@ -10,8 +11,8 @@
 //  Local Constants
 // ---------------------------------------------------------------------------
 #include <mach/cust_adc.h>
-#define MIN_VOLTAGE (800)
-#define MAX_VOLTAGE (1000)
+#define MIN_VOLTAGE (0)
+#define MAX_VOLTAGE (200)
 #define LCM_ID (0x8394)
 
 #define FRAME_WIDTH  										(720)
@@ -120,8 +121,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 
 static void lcm_init(void)
-{ 
-	unsigned int data_array[32];
+{
+	unsigned int  data_array[32];
 			
 		data_array[0] = 0x00043902;
 		data_array[1] = 0x9483FFB9;
@@ -130,8 +131,8 @@ static void lcm_init(void)
 		 
 		data_array[0] = 0x00033902; 						
 		data_array[1] = 0x008372BA;
-		data_array[2] = 0x0909b265;
-		data_array[3] = 0x00001040;
+		//data_array[2] = 0x0909b265;
+		//data_array[3] = 0x00001040;
 		dsi_set_cmdq(data_array, 2, 1);
 		MDELAY(3);
 		   
@@ -180,8 +181,8 @@ static void lcm_init(void)
 		data_array[6] = 0x33070510; 						
 		data_array[7] = 0x370b0b33;
 		data_array[8] = 0x00070710;
-		data_array[9] = 0x0A000000;	
-		data_array[10] = 0x00000100;					  
+		//data_array[9] = 0x0A000000;	
+		//data_array[10] = 0x00000100;					  
 		dsi_set_cmdq(data_array, 9, 1);
 		
 		   
@@ -267,19 +268,63 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
-	SET_RESET_PIN(1);
-	MDELAY(20);
-	SET_RESET_PIN(0);
-	MDELAY(50);
+	unsigned int data_array[35];
+#if 0
+	//dsi_set_cmdq_V3(lcm_deep_sleep_mode_in_setting, sizeof(lcm_deep_sleep_mode_in_setting)/sizeof(lcm_deep_sleep_mode_in_setting[0]), 1);
+	data_array[0] = 0x00280500;
+	dsi_set_cmdq(data_array, 1, 1);
+	MDELAY(40);
+#endif	
+	data_array[0] = 0x00100500;
+	dsi_set_cmdq(data_array, 1, 1);
+	MDELAY(120);
 	
-	SET_RESET_PIN(1);
-	MDELAY(20);
+	SET_RESET_PIN(0);
+	MDELAY(10);
+    //disable VSP & VSN
+    //lcm_util.set_gpio_out(GPIO_LCD_BIAS_ENN_PIN, GPIO_OUT_ZERO);
+	//MDELAY(12);
+	//lcm_util.set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ZERO);
+	//MDELAY(12);
+    MDELAY(5);	 
 }
 
 
 static void lcm_resume(void)
 {
     lcm_init();
+}
+
+
+static void lcm_update(unsigned int x, unsigned int y,
+                       unsigned int width, unsigned int height)
+{
+	unsigned int x0 = x;
+	unsigned int y0 = y;
+	unsigned int x1 = x0 + width - 1;
+	unsigned int y1 = y0 + height - 1;
+
+	unsigned char x0_MSB = ((x0>>8)&0xFF);
+	unsigned char x0_LSB = (x0&0xFF);
+	unsigned char x1_MSB = ((x1>>8)&0xFF);
+	unsigned char x1_LSB = (x1&0xFF);
+	unsigned char y0_MSB = ((y0>>8)&0xFF);
+	unsigned char y0_LSB = (y0&0xFF);
+	unsigned char y1_MSB = ((y1>>8)&0xFF);
+	unsigned char y1_LSB = (y1&0xFF);
+
+	unsigned int data_array[16];
+
+	data_array[0]= 0x00053902;
+	data_array[1]= (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0x2a;
+	data_array[2]= (x1_LSB);
+	data_array[3]= 0x00053902;
+	data_array[4]= (y1_MSB<<24)|(y0_LSB<<16)|(y0_MSB<<8)|0x2b;
+	data_array[5]= (y1_LSB);
+	data_array[6]= 0x002c3909;
+
+	dsi_set_cmdq(data_array, 7, 0);
+
 }
 
 static unsigned int lcm_compare_id(void)
@@ -301,8 +346,8 @@ static unsigned int lcm_compare_id(void)
 		 
 		array[0] = 0x00033902; 						
 		array[1] = 0x008372BA;
-		array[2] = 0x0909b265;
-		array[3] = 0x00001040;
+		//data_array[2] = 0x0909b265;
+		//data_array[3] = 0x00001040;
 		dsi_set_cmdq(array, 2, 1);
 		MDELAY(3);	
 	
@@ -327,7 +372,21 @@ static unsigned int lcm_compare_id(void)
 static unsigned int rgk_lcm_compare_id(void)
 {
     int data[4] = {0,0,0,0};
+    int res = 0;
+    int rawdata = 0;
     int lcm_vol = 0;
+
+#ifdef AUXADC_LCM_VOLTAGE_CHANNEL
+    res = IMM_GetOneChannelValue(AUXADC_LCM_VOLTAGE_CHANNEL,data,&rawdata);
+    if(res < 0)
+    { 
+	#ifdef BUILD_LK
+	printf("[adc_uboot]: get data error\n");
+	#endif
+	return 0;
+		   
+    }
+#endif
 
     lcm_vol = data[0]*1000+data[1]*10;
 
