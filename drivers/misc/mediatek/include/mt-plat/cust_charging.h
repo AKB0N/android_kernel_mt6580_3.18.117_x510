@@ -1,4 +1,3 @@
-
 #ifndef _CUST_BAT_H_
 #define _CUST_BAT_H_
 

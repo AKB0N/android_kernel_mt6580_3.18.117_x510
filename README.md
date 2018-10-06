@@ -4,6 +4,7 @@ This is 3.18.117 MT6580 kernel source ported to be used on INFINIX HOT2 x510.
 | Subsystem | Driver name | Availability | Working |
 |-----------|-------------|--------------|---------|
 | LCM driver #1 | `hx8394d_dsi_vdo_hlt_hsd_hd720` | Yes | Yes |
+| LCM driver #2 | `nt35521_dsi_vdo_yushun_cmi_hd720` | Yes | Yes |
 | Touch panel | `GT9XX (i2c 1-005D)` | Yes | Yes |
 | Charge | `BQ24158 (i2c 1-006A)` | Yes | Yes |
 | GPU | `Mali-400 MP` | Yes | Yes |

@@ -28,18 +28,13 @@
 
 /* Pre-defined definition */
 
-#define TPD_KEY_COUNT   0
-//#define key_1           120,1250             //auto define
-//#define key_2           360,1250
-//#define key_3           600,1250
-#define key_4           840,1350
+#define TPD_KEY_COUNT   3
+#define key_1           180,1380
+#define key_2           360,1380
+#define key_3           540,1380
 
-#define key_1           120,1350             //auto define
-#define key_2           360,1350
-#define key_3           600,1350
-
-#define TPD_KEYS        {KEY_BACK, KEY_HOMEPAGE, KEY_MENU, KEY_SEARCH}
-#define TPD_KEYS_DIM    {{key_1,20,40},{key_2,20,40},{key_3,20,40},{key_4,20,40}}
+#define TPD_KEYS        {KEY_MENU, KEY_HOMEPAGE, KEY_BACK}
+#define TPD_KEYS_DIM    {{key_1,50,30},{key_2,50,30},{key_3,50,30}}
 
 #define TOUCH_FILTER 1
 #if TOUCH_FILTER
