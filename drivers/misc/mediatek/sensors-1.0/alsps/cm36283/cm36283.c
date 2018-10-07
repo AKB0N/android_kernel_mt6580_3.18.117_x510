@@ -187,7 +187,9 @@ enum {
 	CMC_TRC_CVT_AAL = 0x0080,
 	CMC_TRC_DEBUG   = 0x8000,
 } CMC_TRC;
-/*-----------------------------------------------------------------------------*/
+
+
+
 
 int CM36283_i2c_master_operate(struct i2c_client *client, const char *buf, int count, int i2c_flag)
 {
@@ -216,7 +218,7 @@ int CM36283_i2c_master_operate(struct i2c_client *client, const char *buf, int c
 		goto EXIT_ERR;
 	mutex_unlock(&cm36283_mutex);
 	return res;
-	EXIT_ERR:
+EXIT_ERR:
 	mutex_unlock(&cm36283_mutex);
 	APS_ERR("CM36283_i2c_master_operate fail\n");
 	return res;
@@ -268,6 +270,7 @@ int cm36283_enable_ps(struct i2c_client *client, int enable)
 			}
 			atomic_set(&obj->ps_deb_on, 1);
 			atomic_set(&obj->ps_deb_end, jiffies+atomic_read(&obj->ps_debounce)/(1000/HZ));
+			intr_flag = 1; /* reset hw status to away after enable. */
 		} 
 	else{
 			APS_LOG("cm36283_enable_ps disable_ps\n");
@@ -304,17 +307,17 @@ int cm36283_enable_als(struct i2c_client *client, int enable)
 
 	if (enable == 1) {
 		APS_LOG("cm36283_enable_als enable_als\n");
-		databuf[0] = CM36283_REG_CS_CONF;
+		databuf[0] = CM36283_REG_ALS_CONF;
 		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
 		if (res < 0) {
 			APS_ERR("i2c_master_send function err\n");
 			goto ENABLE_ALS_EXIT_ERR;
 		}
-		APS_LOG("CM36283_REG_CS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
+		APS_LOG("CM36283_REG_ALS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 		databuf[2] = databuf[1];
 		databuf[1] = databuf[0]&0xFE;
-		databuf[0] = CM36283_REG_CS_CONF;
+		databuf[0] = CM36283_REG_ALS_CONF;
 		client->addr &=I2C_MASK_FLAG;
 
 		res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
@@ -328,7 +331,7 @@ int cm36283_enable_als(struct i2c_client *client, int enable)
 	}
 else{
 		APS_LOG("cm36283_enable_als disable_als\n");
-		databuf[0] = CM36283_REG_CS_CONF;
+		databuf[0] = CM36283_REG_ALS_CONF;
 		res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
 		if (res < 0)
 		{
@@ -336,11 +339,11 @@ else{
 			goto ENABLE_ALS_EXIT_ERR;
 		}
 
-		APS_LOG("CM36283_REG_CS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
+		APS_LOG("CM36283_REG_ALS_CONF value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 		databuf[2] = databuf[1];
 		databuf[1] = databuf[0]|0x01;
-		databuf[0] = CM36283_REG_CS_CONF;
+		databuf[0] = CM36283_REG_ALS_CONF;
 		client->addr &=I2C_MASK_FLAG;
 
 		res = CM36283_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
@@ -360,7 +363,7 @@ long cm36283_read_ps(struct i2c_client *client, u8 *data)
 {
 	long res;
 	u8 databuf[2];
-	//struct cm36283_priv *obj = i2c_get_clientdata(client);
+	struct cm36283_priv *obj = i2c_get_clientdata(client);
 
 	databuf[0] = CM36283_REG_PS_DATA;
 	res = CM36283_i2c_master_operate(client, databuf, 0x201, I2C_FLAG_READ);
@@ -372,14 +375,10 @@ long cm36283_read_ps(struct i2c_client *client, u8 *data)
 	
 	//APS_LOG("CM36283_REG_PS_DATA value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
-#ifdef SW_CALI
-	if(databuf[0] < obj->ps_cali)
+	if (databuf[0] < obj->ps_cali)
 		*data = 0;
 	else
 		*data = databuf[0] - obj->ps_cali;
-#else
-	*data = databuf[0];
-#endif
 	return 0;
 	READ_PS_EXIT_ERR:
 	return res;
@@ -1118,7 +1117,7 @@ static int cm36283_init_client(struct i2c_client *client)
 	u8 databuf[3];
 	int res = 0;
 
-	databuf[0] = CM36283_REG_CS_CONF;
+	databuf[0] = CM36283_REG_ALS_CONF;
 	if (1 == obj->hw.polling_mode_als)
 		databuf[1] = 0x81;
 	else
@@ -1129,7 +1128,6 @@ static int cm36283_init_client(struct i2c_client *client)
 		APS_ERR("i2c_master_send function err\n");
 		goto EXIT_ERR;
 	}
-	/* APS_LOG("cm36283 ps CM36283_REG_CS_CONF command!\n"); */
 
 	databuf[0] = CM36283_REG_PS_CONF1_2;
 	databuf[1] = 0x1B;
