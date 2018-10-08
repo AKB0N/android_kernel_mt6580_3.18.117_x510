@@ -496,6 +496,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x360c,0xdd);//
 	write_cmos_sensor(0x360e,0x0c);//
 	write_cmos_sensor(0x3610,0x07);//
+
 	write_cmos_sensor(0x3612,0x86);//
 	write_cmos_sensor(0x3613,0x58);//
 	write_cmos_sensor(0x3614,0x28);//
@@ -618,22 +619,28 @@ static void sensor_init(void)
 	write_cmos_sensor(0x37b7,0x00);//
 	write_cmos_sensor(0x37b8,0x00);//
 	write_cmos_sensor(0x37b9,0xff);// ; sensor control
+
 	write_cmos_sensor(0x3800,0x00);// ; X start H
 	write_cmos_sensor(0x3801,0x0c);// ; X start L
+
 	write_cmos_sensor(0x3802,0x00);// ; Y start H
 	write_cmos_sensor(0x3803,0x0c);// ; Y start L
+
 	write_cmos_sensor(0x3804,0x0c);// ; X end H
 	write_cmos_sensor(0x3805,0xd3);// ; X end L
 	write_cmos_sensor(0x3806,0x09);// ; Y end H
 	write_cmos_sensor(0x3807,0xa3);// ; Y end L
+
 	write_cmos_sensor(0x3808,0x06);// ; X output size H
 	write_cmos_sensor(0x3809,0x60);// ; X output size L
 	write_cmos_sensor(0x380a,0x04);// ; Y output size H
 	write_cmos_sensor(0x380b,0xc8);// ; Y output size L
+
 	write_cmos_sensor(0x380c,0x07);// ; HTS H
 	write_cmos_sensor(0x380d,0x83);// ; HTS L
 	write_cmos_sensor(0x380e,0x04);// ; VTS H
 	write_cmos_sensor(0x380f,0xe0);// ; VTS L
+
 	write_cmos_sensor(0x3810,0x00);// ; ISP X win H
 	write_cmos_sensor(0x3811,0x04);// ; ISP X win L
 	write_cmos_sensor(0x3813,0x04);// ; ISP Y win L
@@ -655,7 +662,6 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3d8d,0xef);//AM24a
 
 
-	
 	write_cmos_sensor(0x3f08,0x0b);//
 	
 	write_cmos_sensor(0x4000,0xf1);// ; our range trig en, format chg en, gan chg en, exp chg en, median en
@@ -663,8 +669,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x4005,0x10);// ; BLC target
 
 	write_cmos_sensor(0x4006,0x04);// ;revise for ZSD ON/OFF unstable,MTK
-	write_cmos_sensor(0x4007,0x04);// ; 
-	
+	write_cmos_sensor(0x4007,0x04);// ;
 	write_cmos_sensor(0x400b,0x0c);// ; start line =0, offset limitation en, cut range function en
 	write_cmos_sensor(0x400d,0x10);// ; offset trigger threshold
 	write_cmos_sensor(0x401b,0x00);//

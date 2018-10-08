@@ -150,6 +150,7 @@
 #define OV9726_SENSOR_ID                        0x9726
 #define OV9726MIPI_SENSOR_ID                    0x9726
 #define OV8865_SENSOR_ID                        0x8865
+#define DJ_OV8865_SENSOR_ID						0x8864
 #define OV8858_SENSOR_ID                        0x8858
 #define OV8856_SENSOR_ID                        0x885A
 #define OV8858S_SENSOR_ID                      (0x8858+1)
@@ -343,6 +344,7 @@
 #define SENSOR_DRVNAME_0V9726_RAW               "ov9726raw"
 #define SENSOR_DRVNAME_OV9726_MIPI_RAW          "ov9726mipiraw"
 #define SENSOR_DRVNAME_OV8865_MIPI_RAW          "ov8865mipiraw"
+#define SENSOR_DRVNAME_DJ_OV8865_MIPI_RAW       "dj_ov8865mipiraw"
 #define SENSOR_DRVNAME_OV8858_MIPI_RAW          "ov8858mipiraw"
 #define SENSOR_DRVNAME_OV8858S_MIPI_RAW         "ov8858smipiraw"
 #define SENSOR_DRVNAME_OV8856_MIPI_RAW          "ov8856mipiraw"
