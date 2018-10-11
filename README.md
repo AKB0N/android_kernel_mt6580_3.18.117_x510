@@ -27,6 +27,7 @@ Bugs :
 * Front camera
 * Upside down back camera
 * Volume down button
+* GPS
 
 
 ## Acknowledgements
