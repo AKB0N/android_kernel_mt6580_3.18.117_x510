@@ -1,7 +1,7 @@
 ############################################################################################################
 #
-#  General Setting 
-#    
+#  General Setting
+#
 ############################################################################################################
 - general: MTK_PLATFORM_CFG
   info: 
@@ -29,6 +29,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: BOOTLOADERS
+  is_upgradable: true
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS1
@@ -44,6 +46,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS2
@@ -59,6 +63,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: PROTECTED
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS3
@@ -74,6 +80,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: BINREGION
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS4
@@ -89,6 +97,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: PROTECTED
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS5
@@ -104,6 +114,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: PROTECTED
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS6
@@ -119,6 +131,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS7
@@ -134,6 +148,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: true
+  empty_boot_needed: true
   reserve: 0x00
 
 - partition_index: SYS8
@@ -149,6 +165,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: true
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS9
@@ -164,6 +182,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: true
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS10
@@ -179,6 +199,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS11
@@ -194,6 +216,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: false
+  empty_boot_needed: true
   reserve: 0x00
 
 - partition_index: SYS12
@@ -209,6 +233,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS13
@@ -224,6 +250,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS14
@@ -239,6 +267,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS15
@@ -254,6 +284,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: true
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS16
@@ -269,6 +301,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS17
@@ -284,6 +318,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS18
@@ -299,6 +335,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS19
@@ -314,6 +352,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS20
@@ -329,6 +369,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS21
@@ -344,6 +386,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS22
@@ -359,6 +403,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS23
@@ -374,6 +420,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: INVISIBLE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS24
@@ -389,6 +437,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: true
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS25
@@ -404,6 +454,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS26
@@ -419,6 +471,8 @@
   boundary_check: true
   is_reserved: false
   operation_type: UPDATE
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS27
@@ -434,6 +488,8 @@
   boundary_check: false
   is_reserved: true
   operation_type: RESERVED
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
 - partition_index: SYS28
@@ -449,5 +505,7 @@
   boundary_check: false
   is_reserved: true
   operation_type: RESERVED
+  is_upgradable: false
+  empty_boot_needed: false
   reserve: 0x00
 
