@@ -508,16 +508,18 @@ CONFIG_MTK_CM36283=y
 # LCM drv Start
 
 CONFIG_MTK_LCM=y
-CONFIG_CUSTOM_KERNEL_LCM="nt35521_dsi_vdo_yushun_cmi_hd720 hx8394d_dsi_vdo_hlt_hsd_hd720"
+CONFIG_CUSTOM_KERNEL_LCM="nt35521_dsi_vdo_yushun_cmi_hd720 hx8394d_dsi_vdo_hlt_hsd_hd720 "
 CONFIG_MTK_LCM_PHYSICAL_ROTATION="0"
 CONFIG_LCM_HEIGHT="1280"
 CONFIG_LCM_WIDTH="720"
+CONFIG_CUSTOM_LCM_X="0"
+CONFIG_CUSTOM_LCM_Y="0"
 
 # LCM drv End
 
 # IMGSENSOR drv Start
 
-CONFIG_CUSTOM_KERNEL_IMGSENSOR="ov8865_mipi_raw hi545_mipi_raw gc2755_mipi_raw gc2355_mipi_raw"
+CONFIG_CUSTOM_KERNEL_IMGSENSOR="ov8865_mipi_raw gc2755_mipi_raw"
 
 # IMGSENSOR drv End
 
